@@ -3,7 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { songs as allSongs, type Song } from "@/data/songs";
+import { getSongs, type Song } from "@/lib/supabase";
 
 const Index = () => {
   const [query, setQuery] = useState("");
@@ -13,7 +13,27 @@ const Index = () => {
   const [selectedDifficulties, setSelectedDifficulties] = useState<string[]>(
     []
   );
+  const [allSongs, setAllSongs] = useState<Song[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const difficultyTypes = ["Past", "Present", "Future", "Eternal", "Beyond"];
+
+  const getDifficultyColor = (difficulty: string): string => {
+    switch (difficulty) {
+      case "Past":
+        return "#4caed1";
+      case "Present":
+        return "#8fad4c";
+      case "Future":
+        return "#822c68";
+      case "Eternal":
+        return "#8571a3";
+      case "Beyond":
+        return "#b5112e";
+      default:
+        return "#64748b";
+    }
+  };
 
   const toggleDifficulty = (difficulty: string) => {
     setSelectedDifficulties(
@@ -40,6 +60,23 @@ const Index = () => {
       link.setAttribute("href", "/");
       document.head.appendChild(link);
     }
+
+    // Load songs from Supabase
+    const loadSongs = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const songs = await getSongs();
+        setAllSongs(songs);
+              } catch (err) {
+          console.error("Error loading songs:", err);
+          setError("Failed to load songs. Please try again later.");
+        } finally {
+          setLoading(false);
+        }
+    };
+
+    loadSongs();
   }, []);
 
   const filtered: Song[] = useMemo(() => {
@@ -47,18 +84,19 @@ const Index = () => {
     return allSongs.filter((s) => {
       const q = query.toLowerCase();
       const matches =
-        s.song.toLowerCase().includes(q) ||
+        s.title.toLowerCase().includes(q) ||
         s.artist.toLowerCase().includes(q) ||
-        s.chartConstant.toString().includes(q) ||
-        s.level.toString().includes(q);
-      const inRange = s.chartConstant >= min && s.chartConstant <= max;
+        s.constant.toString().includes(q);
+      // TODO: add tags to search by diff, constant, etc.
+      const inRange = s.constant >= min && s.constant <= max;
+      
       // false if no difficulties selected, or true if the difficulty is in the selected difficulties
       const difficultyMatch =
         selectedDifficulties.length === 0 ||
         selectedDifficulties.includes(s.difficulty);
       return matches && inRange && difficultyMatch;
     });
-  }, [query, difficultyRange, selectedDifficulties]);
+  }, [query, difficultyRange, selectedDifficulties, allSongs]);
 
   const jsonLd = useMemo(
     () => ({
@@ -70,11 +108,11 @@ const Index = () => {
         position: idx + 1,
         item: {
           "@type": "MusicRecording",
-          name: s.song,
+          name: s.title,
           byArtist: { "@type": "MusicGroup", name: s.artist },
           image: s.imageUrl,
           genre: "Rhythm Game",
-          keywords: `difficulty ${s.difficulty}, chart constant ${s.chartConstant}, level ${s.level}, version ${s.version}`,
+          keywords: `difficulty ${s.difficulty}, constant ${s.constant}, level ${s.level}, version ${s.version}`,
         },
       })),
     }),
@@ -107,7 +145,6 @@ const Index = () => {
           </a>
         </div>
       </header>
-
       <main className="container">
         <section aria-labelledby="filters" className="mb-6">
           <h2 id="filters" className="sr-only">
@@ -118,7 +155,7 @@ const Index = () => {
               <Input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search by title, artist, difficulty, or constant"
+                placeholder="Search by title, artist, or constant"
                 aria-label="Search songs"
               />
             </div>
@@ -154,7 +191,18 @@ const Index = () => {
                       }
                       size="sm"
                       onClick={() => toggleDifficulty(difficulty)}
-                      className="text-xs"
+                      className="text-xs border-2"
+                      style={{
+                        backgroundColor: selectedDifficulties.includes(
+                          difficulty
+                        )
+                          ? getDifficultyColor(difficulty)
+                          : "transparent",
+                        borderColor: getDifficultyColor(difficulty),
+                        color: selectedDifficulties.includes(difficulty)
+                          ? "white"
+                          : getDifficultyColor(difficulty),
+                      }}
                     >
                       {difficulty === "Eternal"
                         ? "ETR"
@@ -190,58 +238,76 @@ const Index = () => {
           <h2 id="results" className="sr-only">
             Results
           </h2>
-          <ul className="space-y-3" role="list">
-            {filtered.map((song, index) => (
-              <li
-                key={`${song.song}-${song.difficulty}-${song.version}-${index}`}
-                className="group p-4 rounded-lg border bg-card hover:border-ring transition-all duration-200"
-              >
-                <article className="flex items-center gap-4">
-                  <img
-                    src={`https://corsproxy.io/?${encodeURIComponent(
-                      song.imageUrl
-                    )}`}
-                    width={80}
-                    height={80}
-                    loading="lazy"
-                    alt={`Cover art: ${song.song} by ${song.artist}`}
-                    className="h-20 w-20 rounded-md object-cover ring-1 ring-border group-hover:ring-ring transition"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-lg font-semibold truncate">
-                      {song.song}
-                    </h3>
-                    <p className="text-sm text-muted-foreground truncate">
-                      {song.artist}
-                    </p>
-                    <div className="text-xs text-muted-foreground">
-                      {song.version} • {song.difficulty}
-                    </div>
-                  </div>
-                  <div className="flex flex-col items-end gap-1">
-                    <Badge
-                      className="select-none"
-                      aria-label={`Chart Constant ${song.chartConstant}`}
-                    >
-                      {"Constant: " + song.chartConstant}
-                    </Badge>
-                    <Badge
-                      className="select-none"
-                      aria-label={`Level ${song.level}`}
-                      variant="secondary"
-                    >
-                      {"Level: " + song.level}
-                    </Badge>
-                  </div>
-                </article>
-              </li>
-            ))}
-          </ul>
-
-          {filtered.length === 0 && (
+          {loading && (
             <div className="text-center py-16 text-muted-foreground">
-              No songs match your search.
+              Loading songs...
             </div>
+          )}
+          {error && (
+            <div className="text-center py-16 text-red-500">{error}</div>
+          )}
+          {!loading && !error && (
+            <ul className="space-y-3" role="list">
+              {filtered.map((song, index) => (
+                <li
+                  key={`${song.title}-${song.difficulty}-${song.version}-${index}`}
+                  className="group p-4 rounded-lg border bg-card hover:border-ring transition-all duration-200"
+                >
+                  <article className="flex items-center gap-4">
+                    <img
+                      src={`https://corsproxy.io/?${encodeURIComponent(
+                        song.imageUrl
+                      )}`}
+                      width={80}
+                      height={80}
+                      loading="lazy"
+                      alt={`Cover art: ${song.title} by ${song.artist}`}
+                      className="h-20 w-20 rounded-md object-cover ring-1 ring-border group-hover:ring-ring transition"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-lg font-semibold truncate">
+                        {song.title}
+                      </h3>
+                      <p className="text-sm text-muted-foreground truncate">
+                        {song.artist}
+                      </p>
+                      <div className="text-xs text-muted-foreground">
+                        {song.version} •{" "}
+                        <span
+                          style={{
+                            color: getDifficultyColor(song.difficulty),
+                            fontWeight: "600",
+                          }}
+                        >
+                          {song.difficulty}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-end gap-1">
+                      <Badge
+                        className="select-none"
+                        aria-label={`Constant ${song.constant}`}
+                      >
+                        {"Constant: " + song.constant}
+                      </Badge>
+                      <Badge
+                        className="select-none"
+                        aria-label={`Level ${song.level}`}
+                        variant="secondary"
+                      >
+                        {"Level: " + song.level}
+                      </Badge>
+                    </div>
+                  </article>
+                </li>
+              ))}
+
+              {filtered.length === 0 && (
+                <div className="text-center py-16 text-muted-foreground">
+                  No songs match your search.
+                </div>
+              )}
+            </ul>
           )}
         </section>
       </main>
