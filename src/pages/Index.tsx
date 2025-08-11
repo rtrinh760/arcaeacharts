@@ -372,27 +372,27 @@ const Index = () => {
                         </div>
                       </div>
                       <div className="flex flex-col items-end gap-2">
-                        <Badge
+                      <Badge
                           className="select-none h-6 md:h-8 min-w-[100px] md:min-w-[140px] justify-center text-xs md:text-sm font-medium font-mono border-2"
                           style={{
-                            backgroundColor: '#f9fafb',
-                            borderColor: '#374151',
-                            color: '#111827'
-                          }}
-                          aria-label={`Constant ${song.constant}`}
-                        >
-                          {"Constant: " + song.constant}
-                        </Badge>
-                        <Badge
-                          className="select-none h-6 md:h-8 min-w-[100px] md:min-w-[140px] justify-center text-xs md:text-sm font-medium font-mono border-2"
-                          style={{
-                            backgroundColor: '#374151',
-                            borderColor: '#6b7280',
+                            backgroundColor: '#4e356f',
+                            borderColor: '#4e356f',
                             color: '#ffffff'
                           }}
                           aria-label={`Level ${song.level}`}
                         >
                           {"Level:    " + song.level}
+                        </Badge>
+                        <Badge
+                          className="select-none h-6 md:h-8 min-w-[100px] md:min-w-[140px] justify-center text-xs md:text-sm font-medium font-mono border-2"
+                          style={{
+                            backgroundColor: '#f9fafb',
+                            borderColor: '#4e356f',
+                            color: '#111827'
+                          }}
+                          aria-label={`Constant ${song.constant}`}
+                        >
+                          {"Constant: " + song.constant}
                         </Badge>
                       </div>
                     </article>
