@@ -10,12 +10,17 @@ const Index = () => {
   const [difficultyRange, setDifficultyRange] = useState<[number, number]>([
     1, 12,
   ]);
+  const [debouncedDifficultyRange, setDebouncedDifficultyRange] = useState<
+    [number, number]
+  >([1, 12]);
   const [selectedDifficulties, setSelectedDifficulties] = useState<string[]>(
     []
   );
   const [allSongs, setAllSongs] = useState<Song[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
   const difficultyTypes = ["Past", "Present", "Future", "Eternal", "Beyond"];
 
   const getDifficultyColor = (difficulty: string): string => {
@@ -68,35 +73,63 @@ const Index = () => {
         setError(null);
         const songs = await getSongs();
         setAllSongs(songs);
-              } catch (err) {
-          console.error("Error loading songs:", err);
-          setError("Failed to load songs. Please try again later.");
-        } finally {
-          setLoading(false);
-        }
+      } catch (err) {
+        console.error("Error loading songs:", err);
+        setError("Failed to load songs. Please try again later.");
+      } finally {
+        setLoading(false);
+      }
     };
 
     loadSongs();
   }, []);
 
+  // Debounce difficulty range changes
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedDifficultyRange(difficultyRange);
+    }, 150); // Wait 150ms after user stops moving slider
+
+    return () => clearTimeout(timer);
+  }, [difficultyRange]);
+
+  // Pre-process songs for faster filtering
+  const processedSongs = useMemo(() => {
+    return allSongs.map((song) => ({
+      ...song,
+      searchText:
+        `${song.title} ${song.artist} ${song.constant} ${song.level}`.toLowerCase(),
+    }));
+  }, [allSongs]);
+
   const filtered: Song[] = useMemo(() => {
-    const [min, max] = difficultyRange;
-    return allSongs.filter((s) => {
-      const q = query.toLowerCase();
-      const matches =
-        s.title.toLowerCase().includes(q) ||
-        s.artist.toLowerCase().includes(q) ||
-        s.constant.toString().includes(q);
-      // TODO: add tags to search by diff, constant, etc.
+    const [min, max] = debouncedDifficultyRange;
+    const q = query.toLowerCase();
+
+    return processedSongs.filter((s) => {
+      const matches = !q || s.searchText.includes(q);
       const inRange = s.constant >= min && s.constant <= max;
-      
-      // false if no difficulties selected, or true if the difficulty is in the selected difficulties
       const difficultyMatch =
         selectedDifficulties.length === 0 ||
         selectedDifficulties.includes(s.difficulty);
       return matches && inRange && difficultyMatch;
     });
-  }, [query, difficultyRange, selectedDifficulties, allSongs]);
+  }, [query, debouncedDifficultyRange, selectedDifficulties, processedSongs]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [query, debouncedDifficultyRange, selectedDifficulties]);
+
+  // Paginated results
+  const paginatedSongs = useMemo(() => {
+    const startIndex = (currentPage - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    return filtered.slice(startIndex, endIndex);
+  }, [filtered, currentPage, pageSize]);
+
+  const totalPages = Math.ceil(filtered.length / pageSize);
+  const pageSizeOptions = [1, 10, 25, 50];
 
   const jsonLd = useMemo(
     () => ({
@@ -247,67 +280,133 @@ const Index = () => {
             <div className="text-center py-16 text-red-500">{error}</div>
           )}
           {!loading && !error && (
-            <ul className="space-y-3" role="list">
-              {filtered.map((song, index) => (
-                <li
-                  key={`${song.title}-${song.difficulty}-${song.version}-${index}`}
-                  className="group p-4 rounded-lg border bg-card hover:border-ring transition-all duration-200"
-                >
-                  <article className="flex items-center gap-4">
-                    <img
-                      src={`https://corsproxy.io/?${encodeURIComponent(
-                        song.imageUrl
-                      )}`}
-                      width={80}
-                      height={80}
-                      loading="lazy"
-                      alt={`Cover art: ${song.title} by ${song.artist}`}
-                      className="h-20 w-20 rounded-md object-cover ring-1 ring-border group-hover:ring-ring transition"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-lg font-semibold truncate">
-                        {song.title}
-                      </h3>
-                      <p className="text-sm text-muted-foreground truncate">
-                        {song.artist}
-                      </p>
-                      <div className="text-xs text-muted-foreground">
-                        {song.version} •{" "}
-                        <span
-                          style={{
-                            color: getDifficultyColor(song.difficulty),
-                            fontWeight: "600",
-                          }}
-                        >
-                          {song.difficulty}
-                        </span>
+            <>
+              <ul className="space-y-3" role="list">
+                {paginatedSongs.map((song, index) => (
+                  <li
+                    key={`${song.title}-${song.difficulty}-${song.version}-${index}`}
+                    className="group p-4 rounded-lg border bg-card hover:border-ring transition-all duration-200"
+                  >
+                    <article className="flex items-center gap-4">
+                      <img
+                        src={`https://corsproxy.io/?${encodeURIComponent(
+                          song.imageUrl
+                        )}`}
+                        width={80}
+                        height={80}
+                        loading="lazy"
+                        alt={`Cover art: ${song.title} by ${song.artist}`}
+                        className="h-20 w-20 rounded-md object-cover ring-1 ring-border group-hover:ring-ring transition"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-lg font-semibold truncate">
+                          {song.title}
+                        </h3>
+                        <p className="text-sm text-muted-foreground truncate">
+                          {song.artist}
+                        </p>
+                        <div className="text-xs text-muted-foreground">
+                          {song.version} •{" "}
+                          <span
+                            style={{
+                              color: getDifficultyColor(song.difficulty),
+                              fontWeight: "600",
+                            }}
+                          >
+                            {song.difficulty}
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex flex-col items-end gap-1">
-                      <Badge
-                        className="select-none"
-                        aria-label={`Constant ${song.constant}`}
-                      >
-                        {"Constant: " + song.constant}
-                      </Badge>
-                      <Badge
-                        className="select-none"
-                        aria-label={`Level ${song.level}`}
-                        variant="secondary"
-                      >
-                        {"Level: " + song.level}
-                      </Badge>
-                    </div>
-                  </article>
-                </li>
-              ))}
+                      <div className="flex flex-col items-end gap-1">
+                        <Badge
+                          className="select-none"
+                          aria-label={`Constant ${song.constant}`}
+                        >
+                          {"Constant: " + song.constant}
+                        </Badge>
+                        <Badge
+                          className="select-none"
+                          aria-label={`Level ${song.level}`}
+                          variant="secondary"
+                        >
+                          {"Level: " + song.level}
+                        </Badge>
+                      </div>
+                    </article>
+                  </li>
+                ))}
 
-              {filtered.length === 0 && (
-                <div className="text-center py-16 text-muted-foreground">
-                  No songs match your search.
+                {filtered.length === 0 && (
+                  <div className="text-center py-16 text-muted-foreground">
+                    No songs match your search.
+                  </div>
+                )}
+              </ul>
+
+              {/* Pagination Controls */}
+              {filtered.length > 0 && (
+                <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+                  {/* Results info */}
+                  <div className="text-sm text-muted-foreground">
+                    Showing{" "}
+                    {Math.min(
+                      (currentPage - 1) * pageSize + 1,
+                      filtered.length
+                    )}{" "}
+                    to {Math.min(currentPage * pageSize, filtered.length)} of{" "}
+                    {filtered.length} songs
+                  </div>
+
+                  {/* Page size selector */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">Show:</span>
+                    {pageSizeOptions.map((size) => (
+                      <Button
+                        key={size}
+                        variant={pageSize === size ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => {
+                          setPageSize(size);
+                          setCurrentPage(1);
+                        }}
+                        className="text-xs"
+                      >
+                        {size}
+                      </Button>
+                    ))}
+                  </div>
+
+                  {/* Page navigation */}
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        setCurrentPage((prev) => Math.max(1, prev - 1))
+                      }
+                      disabled={currentPage === 1}
+                    >
+                      Previous
+                    </Button>
+
+                    <span className="text-sm text-muted-foreground">
+                      Page {currentPage} of {totalPages}
+                    </span>
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+                      }
+                      disabled={currentPage === totalPages}
+                    >
+                      Next
+                    </Button>
+                  </div>
                 </div>
               )}
-            </ul>
+            </>
           )}
         </section>
       </main>
