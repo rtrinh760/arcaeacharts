@@ -1,4 +1,4 @@
-# 🗄️ Database Setup Guide
+# Database Setup Guide
 
 This guide explains how to set up your own database backend for a song chart browsing application. These instructions use Supabase as an example, but the concepts apply to other database solutions as well.
 
@@ -97,24 +97,24 @@ Use your application code or scripts to populate the database through the API.
    - If you added test data, it should appear
    - Check browser console (F12) for any error messages
 
-## 🎉 You're Done!
+## Results
 
-Your application is now connected to your own database! The app will load data from your database and all filtering/search functionality should work as expected.
+Your application is now connected to your database. The app will load data from your database and all filtering/search functionality should work as expected.
 
-## 🔧 Troubleshooting
+## Troubleshooting
 
 ### Common Issues:
 
-**🚫 "Failed to load data"**
+**"Failed to load data"**
 - Double-check your environment variables in `.env.local`
 - Restart your dev server after adding environment variables
 - Verify your database URL and API key are correct
 
-**🔒 "Permission denied"**
+**"Permission denied"**
 - Make sure you set up Row Level Security policies correctly
 - Check that your policies allow the appropriate access levels
 
-**📊 "No data showing"**
+**"No data showing"**
 - Verify your table was created successfully
 - Check that you have data in your table
 - Ensure your application code matches your database schema
@@ -124,7 +124,7 @@ Your application is now connected to your own database! The app will load data f
 - Review your setup step-by-step to identify any missed steps
 - Consider starting with a simple test setup before importing large datasets
 
-## 🚀 Optional Enhancements
+## Optional Enhancements
 
 Once your basic setup is working, you can:
 - Set up automatic data backups

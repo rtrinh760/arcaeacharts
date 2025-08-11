@@ -2,19 +2,19 @@
 
 A basic web application for browsing and searching Arcaea charts.
 
-## ✨ Features
+## Features
 
-### 🔍 **Search & Filtering**
+### **Search & Filtering**
 - **Text Search**: Search by song title, artist, or chart constant
 - **Difficulty Range**:  Slider for filtering by chart constant (1.0 - 12.0+)
 - **Difficulty Types**: Filter by Past, Present, Future, Eternal, and Beyond difficulties
 
-## 🛠️ Technologies
+## Technologies
 - **Frontend**: React, TypeScript, Tailwind
 - **Backend**: Supabase
 - **Build Tool**: Vite
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 - Node.js 18+ 
@@ -51,7 +51,7 @@ A basic web application for browsing and searching Arcaea charts.
 
 For detailed Supabase setup instructions, see [SUPABASE_SETUP.md](SUPABASE_SETUP.md).
 
-## 🤝 Contributing
+## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request. For major changes, please open an issue first to discuss what you would like to change.
 
@@ -62,16 +62,16 @@ Contributions are welcome! Please feel free to submit a Pull Request. For major 
 - Add proper error handling
 - Include performance considerations
 
-## 📝 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - [Arcaea](https://arcaea.lowiro.com/)
 - [Arcaea Wiki](https://arcaea.fandom.com/wiki/Arcaea_Wiki)
 
-## 💖 Support
+## Support
 
 If you find this project helpful, consider supporting it:
 
