@@ -51,10 +51,6 @@ A basic web application for browsing and searching Arcaea charts.
 
 For detailed Supabase setup instructions, see [SUPABASE_SETUP.md](SUPABASE_SETUP.md).
 
-## 📊 Database Schema
-
-The application uses a single `songs` table with the following structure:
-
 ## 🤝 Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request. For major changes, please open an issue first to discuss what you would like to change.
@@ -72,10 +68,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🙏 Acknowledgments
 
-- [Arcaea](https://arcaea.lowiro.com/) - The amazing rhythm game that inspired this project
-- [Supabase](https://supabase.com/) - For the excellent backend-as-a-service platform
-- [shadcn/ui](https://ui.shadcn.com/) - For the beautiful UI components
-- [Tailwind CSS](https://tailwindcss.com/) - For the utility-first CSS framework
+- [Arcaea](https://arcaea.lowiro.com/)
+- [Arcaea Wiki](https://arcaea.fandom.com/wiki/Arcaea_Wiki)
 
 ## 💖 Support
 
