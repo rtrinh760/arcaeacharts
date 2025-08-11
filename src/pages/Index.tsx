@@ -165,17 +165,7 @@ const Index = () => {
           >
             Arcaea Charts
           </h1>
-          <a
-            href="https://ko-fi.com/S6S41JCXEZ"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <img
-              src="https://storage.ko-fi.com/cdn/kofi5.png?v=6"
-              alt="Buy Me a Coffee at ko-fi.com"
-              className="border-0 h-10"
-            />
-          </a>
+
         </div>
       </header>
       <main className="container">
@@ -212,7 +202,6 @@ const Index = () => {
                 </span>
               </div>
               <div className="space-y-3">
-                {/* TODO: fix buttons not filtering */}
                 <div className="flex flex-wrap gap-1">
                   {difficultyTypes.map((difficulty) => (
                     <Button
@@ -251,7 +240,6 @@ const Index = () => {
                     </Button>
                   ))}
                 </div>
-                {/* TODO: fix slider lagging */}
                 <Slider
                   value={difficultyRange}
                   onValueChange={(val) =>
@@ -416,16 +404,31 @@ const Index = () => {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <footer className="w-full py-4 mt-auto text-center text-sm text-gray-500">
-        Arcaea Charts by 8bits
-        <span className="mx-2">·</span>
-        <a
-          href="https://github.com/rtrinh760/arcaeacharts"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="underline hover:text-gray-700"
-        >
-          GitHub
-        </a>
+        <div className="flex flex-col items-center gap-2">
+          <a
+            href="https://ko-fi.com/S6S41JCXEZ"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <img
+              src="https://storage.ko-fi.com/cdn/kofi5.png?v=6"
+              alt="Buy Me a Coffee at ko-fi.com"
+              className="border-0 h-10"
+            />
+          </a>
+          <div>
+            Arcaea Charts by 8bits
+            <span className="mx-2">·</span>
+            <a
+              href="https://github.com/rtrinh760/arcaeacharts"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline hover:text-gray-700"
+            >
+              GitHub
+            </a>
+          </div>
+        </div>
       </footer>
     </div>
   );

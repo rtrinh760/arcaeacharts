@@ -1,69 +1,88 @@
-# React + TypeScript + Vite
+# Arcaea Charts
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A basic web application for browsing and searching Arcaea charts.
 
-Currently, two official plugins are available:
+## ✨ Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+### 🔍 **Search & Filtering**
+- **Text Search**: Search by song title, artist, or chart constant
+- **Difficulty Range**:  Slider for filtering by chart constant (1.0 - 12.0+)
+- **Difficulty Types**: Filter by Past, Present, Future, Eternal, and Beyond difficulties
 
-## Expanding the ESLint configuration
+## 🛠️ Technologies
+- **Frontend**: React, TypeScript, Tailwind
+- **Backend**: Supabase
+- **Build Tool**: Vite
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## 🚀 Getting Started
 
-```js
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+### Prerequisites
+- Node.js 18+ 
+- npm or yarn
+- Supabase account (for database)
 
-      // Remove tseslint.configs.recommended and replace with this
-      ...tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      ...tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      ...tseslint.configs.stylisticTypeChecked,
+### Installation
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/rtrinh760/arcaeacharts.git
+   cd arcaeacharts
+   ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+3. **Set up Supabase**
+   ```bash
+   # Create a .env.local file
+   echo "VITE_SUPABASE_URL=your_supabase_project_url" >> .env.local
+   echo "VITE_SUPABASE_ANON_KEY=your_supabase_anon_key" >> .env.local
+   ```
 
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+4. **Start development server**
+   ```bash
+   npm run dev
+   ```
+
+5. **Open your browser**
+   Navigate to `http://localhost:5173`
+
+For detailed Supabase setup instructions, see [SUPABASE_SETUP.md](SUPABASE_SETUP.md).
+
+## 📊 Database Schema
+
+The application uses a single `songs` table with the following structure:
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request. For major changes, please open an issue first to discuss what you would like to change.
+
+### Development Guidelines
+- Follow TypeScript best practices
+- Use existing UI components from shadcn/ui
+- Maintain responsive design principles
+- Add proper error handling
+- Include performance considerations
+
+## 📝 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- [Arcaea](https://arcaea.lowiro.com/) - The amazing rhythm game that inspired this project
+- [Supabase](https://supabase.com/) - For the excellent backend-as-a-service platform
+- [shadcn/ui](https://ui.shadcn.com/) - For the beautiful UI components
+- [Tailwind CSS](https://tailwindcss.com/) - For the utility-first CSS framework
+
+## 💖 Support
+
+If you find this project helpful, consider supporting it:
+
+[![Ko-fi](https://storage.ko-fi.com/cdn/kofi5.png?v=6)](https://ko-fi.com/S6S41JCXEZ)
+
+---
+
+**Made by 8bits** | [Live Demo](https://arcaeacharts.vercel.app) | [Report Issues](https://github.com/rtrinh760/arcaeacharts/issues)
