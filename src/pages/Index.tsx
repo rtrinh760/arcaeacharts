@@ -203,8 +203,9 @@ const Index = () => {
           <h2 id="filters" className="sr-only">
             Filters
           </h2>
-          <div className="grid md:grid-cols-3 gap-6 items-center">
-            <div className="md:col-span-2">
+          <div className="space-y-4">
+            {/* Search Bar - Full Width */}
+            <div>
               <Input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
@@ -212,111 +213,146 @@ const Index = () => {
                 aria-label="Search songs"
               />
             </div>
-            <div>
-              <div className="flex flex-col space-y-2">
-                {/* Sort Controls */}
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground mr-2">Sort:</span>
-                  <select
-                    value={sortBy}
-                    onChange={(e) =>
-                      setSortBy(
-                        e.target.value as "title" | "artist" | "constant"
-                      )
-                    }
-                    className="text-xs px-2 py-1 border border-input bg-background rounded-md text-foreground"
-                  >
-                    <option value="title">Title</option>
-                    <option value="artist">Artist</option>
-                    <option value="constant">Constant</option>
-                  </select>
+
+            {/* Sort and Filter Controls */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 width:75%">
+              {/* Sort Controls */}
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground mr-1 sm:mr-0">
+                  Sort:
+                </span>
+                <select
+                  value={sortBy}
+                  onChange={(e) =>
+                    setSortBy(e.target.value as "title" | "artist" | "constant")
+                  }
+                  className="text-xs px-2 py-1 border border-input bg-background rounded-md text-foreground"
+                >
+                  <option value="title">Title</option>
+                  <option value="artist">Artist</option>
+                  <option value="constant">Constant</option>
+                </select>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    setSortOrder(sortOrder === "asc" ? "desc" : "asc")
+                  }
+                  className="text-xs px-2 py-1 h-auto min-w-[32px]"
+                  title={
+                    sortOrder === "asc" ? "Sort Ascending" : "Sort Descending"
+                  }
+                >
+                  {sortOrder === "asc" ? "↑" : "↓"}
+                </Button>
+              </div>
+
+              {/* Filter Controls */}
+              <div className="flex flex-wrap gap-2 items-center">
+                <span className="text-sm text-muted-foreground">Filter:</span>
+                {difficultyTypes.map((difficulty) => (
                   <Button
-                    variant="outline"
+                    key={difficulty}
+                    variant={
+                      selectedDifficulties.includes(difficulty)
+                        ? "default"
+                        : "outline"
+                    }
                     size="sm"
-                    onClick={() =>
-                      setSortOrder(sortOrder === "asc" ? "desc" : "asc")
-                    }
-                    className="text-xs px-2 py-1 h-auto min-w-[32px]"
-                    title={
-                      sortOrder === "asc" ? "Sort Ascending" : "Sort Descending"
-                    }
+                    onClick={() => toggleDifficulty(difficulty)}
+                    className="text-xs border-2"
+                    style={{
+                      backgroundColor: selectedDifficulties.includes(difficulty)
+                        ? getDifficultyColor(difficulty)
+                        : "transparent",
+                      borderColor: getDifficultyColor(difficulty),
+                      color: selectedDifficulties.includes(difficulty)
+                        ? "white"
+                        : getDifficultyColor(difficulty),
+                    }}
                   >
-                    {sortOrder === "asc" ? "↑" : "↓"}
+                    {difficulty === "Eternal"
+                      ? "ETR"
+                      : difficulty === "Beyond"
+                      ? "BYD"
+                      : difficulty === "Past"
+                      ? "PST"
+                      : difficulty === "Present"
+                      ? "PRS"
+                      : difficulty === "Future"
+                      ? "FTR"
+                      : difficulty.slice(0, 3).toUpperCase()}
                   </Button>
-                </div>
-                {/* Filter Controls */}
-                <div className="flex flex-wrap gap-2 items-center">
-                  <span className="text-sm text-muted-foreground mr-1">
-                    Filter:
+                ))}
+              </div>
+
+              {/* Difficulty Range Slider - Visible on large screens */}
+              <div className="hidden lg:flex lg:items-center lg:gap-4 lg:flex-1">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="text-sm text-muted-foreground whitespace-nowrap">
+                    Difficulty:
                   </span>
-                  {difficultyTypes.map((difficulty) => (
-                    <Button
-                      key={difficulty}
-                      variant={
-                        selectedDifficulties.includes(difficulty)
-                          ? "default"
-                          : "outline"
-                      }
-                      size="sm"
-                      onClick={() => toggleDifficulty(difficulty)}
-                      className="text-xs border-2"
-                      style={{
-                        backgroundColor: selectedDifficulties.includes(
-                          difficulty
-                        )
-                          ? getDifficultyColor(difficulty)
-                          : "transparent",
-                        borderColor: getDifficultyColor(difficulty),
-                        color: selectedDifficulties.includes(difficulty)
-                          ? "white"
-                          : getDifficultyColor(difficulty),
-                      }}
-                    >
-                      {difficulty === "Eternal"
-                        ? "ETR"
-                        : difficulty === "Beyond"
-                        ? "BYD"
-                        : difficulty === "Past"
-                        ? "PST"
-                        : difficulty === "Present"
-                        ? "PRS"
-                        : difficulty === "Future"
-                        ? "FTR"
-                        : difficulty.slice(0, 3).toUpperCase()}
-                    </Button>
-                  ))}
-                </div>
-                {/* Difficulty Range */}
-                <div className="flex items-center justify-between text-sm text-muted-foreground">
-                  <span>Difficulty</span>
-                  <span>
+                  <div className="flex items-center gap-1">
                     <Badge
                       variant="secondary"
                       aria-label="Current min difficulty"
                     >
                       {difficultyRange[0]}
                     </Badge>
-                    <span className="mx-1">–</span>
+                    <span className="text-sm text-muted-foreground">–</span>
                     <Badge
                       variant="secondary"
                       aria-label="Current max difficulty"
                     >
                       {difficultyRange[1]}
                     </Badge>
-                  </span>
+                  </div>
                 </div>
-                {/* Difficulty Slider */}
-                <Slider
-                  value={difficultyRange}
-                  onValueChange={(val) =>
-                    setDifficultyRange([val[0], val[1]] as [number, number])
-                  }
-                  min={1}
-                  max={12}
-                  step={0.1}
-                  aria-label="Difficulty range"
-                />
+                <div className="flex-1 min-w-0">
+                  <Slider
+                    value={difficultyRange}
+                    onValueChange={(val) =>
+                      setDifficultyRange([val[0], val[1]] as [number, number])
+                    }
+                    min={1}
+                    max={12}
+                    step={0.1}
+                    aria-label="Difficulty range"
+                  />
+                </div>
               </div>
+            </div>
+
+            {/* Difficulty Range Slider - Below on smaller screens */}
+            <div className="space-y-2 lg:hidden">
+              <div className="flex items-center justify-between text-sm text-muted-foreground">
+                <span>Difficulty</span>
+                <span>
+                  <Badge
+                    variant="secondary"
+                    aria-label="Current min difficulty"
+                  >
+                    {difficultyRange[0]}
+                  </Badge>
+                  <span className="mx-1">–</span>
+                  <Badge
+                    variant="secondary"
+                    aria-label="Current max difficulty"
+                  >
+                    {difficultyRange[1]}
+                  </Badge>
+                </span>
+              </div>
+              <Slider
+                value={difficultyRange}
+                onValueChange={(val) =>
+                  setDifficultyRange([val[0], val[1]] as [number, number])
+                }
+                min={1}
+                max={12}
+                step={0.1}
+                aria-label="Difficulty range"
+              />
             </div>
           </div>
         </section>
@@ -372,12 +408,12 @@ const Index = () => {
                         </div>
                       </div>
                       <div className="flex flex-col items-end gap-2">
-                      <Badge
+                        <Badge
                           className="select-none h-6 md:h-8 min-w-[100px] md:min-w-[140px] justify-center text-xs md:text-sm font-medium font-mono border-2"
                           style={{
-                            backgroundColor: '#4e356f',
-                            borderColor: '#4e356f',
-                            color: '#ffffff'
+                            backgroundColor: "#4e356f",
+                            borderColor: "#4e356f",
+                            color: "#ffffff",
                           }}
                           aria-label={`Level ${song.level}`}
                         >
@@ -386,9 +422,9 @@ const Index = () => {
                         <Badge
                           className="select-none h-6 md:h-8 min-w-[100px] md:min-w-[140px] justify-center text-xs md:text-sm font-medium font-mono border-2"
                           style={{
-                            backgroundColor: '#f9fafb',
-                            borderColor: '#4e356f',
-                            color: '#111827'
+                            backgroundColor: "#f9fafb",
+                            borderColor: "#4e356f",
+                            color: "#111827",
                           }}
                           aria-label={`Constant ${song.constant}`}
                         >
@@ -411,18 +447,16 @@ const Index = () => {
                 <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
                   {/* Results info */}
                   <div className="text-sm text-muted-foreground">
-                    Showing{" "}
                     {Math.min(
                       (currentPage - 1) * pageSize + 1,
                       filtered.length
-                    )}{" "}
-                    to {Math.min(currentPage * pageSize, filtered.length)} of{" "}
+                    )}
+                    -{Math.min(currentPage * pageSize, filtered.length)} of{" "}
                     {filtered.length} songs
                   </div>
 
                   {/* Page size selector */}
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground">Show:</span>
                     {pageSizeOptions.map((size) => (
                       <Button
                         key={size}
@@ -453,7 +487,7 @@ const Index = () => {
                     </Button>
 
                     <span className="text-sm text-muted-foreground">
-                      Page {currentPage} of {totalPages}
+                      {currentPage} of {totalPages}
                     </span>
 
                     <Button
@@ -478,29 +512,29 @@ const Index = () => {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <footer className="w-full py-4 mt-auto text-center text-sm text-gray-500">
+      <footer className="w-full py-8 mt-auto text-center text-md text-gray-500">
         <div className="flex flex-col items-center gap-2">
-          <a
-            href="https://ko-fi.com/S6S41JCXEZ"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <img
-              src="https://storage.ko-fi.com/cdn/kofi5.png?v=6"
-              alt="Buy Me a Coffee at ko-fi.com"
-              className="border-0 h-10"
-            />
-          </a>
-          <div>
+          <div className="flex flex-row items-center gap-2">
             Arcaea Charts by 8bits
-            <span className="mx-2">·</span>
+            <span>·</span>
             <a
               href="https://github.com/rtrinh760/arcaeacharts"
               target="_blank"
               rel="noopener noreferrer"
-              className="underline hover:text-gray-700"
+              className="underline hover:text-gray-700 mr-2"
             >
               GitHub
+            </a>
+            <a
+              href="https://ko-fi.com/S6S41JCXEZ"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <img
+                src="https://storage.ko-fi.com/cdn/kofi5.png?v=6"
+                alt="Buy Me a Coffee at ko-fi.com"
+                className="border-0 h-8"
+              />
             </a>
           </div>
         </div>
