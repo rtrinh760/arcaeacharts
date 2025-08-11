@@ -191,7 +191,7 @@ const Index = () => {
               Arcaea Charts
             </h1>
             <img
-              src="/src/assets/arcaea_logo.jpg"
+              src="/arcaea_logo.jpg"
               alt="Game Logo"
               className="h-16 md:h-20 w-auto object-contain"
             />
