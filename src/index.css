@@ -114,7 +114,33 @@
   * {
     @apply border-border outline-ring/50;
   }
-  body {
-    @apply bg-background text-foreground;
+body {
+  @apply bg-background text-foreground;
+}
+
+/* Mobile gesture prevention utilities */
+.no-gestures {
+  touch-action: none !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -webkit-touch-callout: none !important;
+  -webkit-tap-highlight-color: transparent !important;
+}
+
+.touch-manipulation {
+  touch-action: manipulation !important;
+}
+
+/* Prevent mobile browser zooming globally when needed */
+.prevent-zoom * {
+  touch-action: manipulation !important;
+}
+
+/* iOS specific gesture prevention */
+@supports (-webkit-touch-callout: none) {
+  .no-gestures {
+    -webkit-user-drag: none !important;
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0) !important;
   }
+}
 }
