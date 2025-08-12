@@ -85,7 +85,6 @@ function apiPlugin(env: Record<string, string>): Plugin {
         }
 
         try {
-          console.log(`Using YouTube API key: ${YOUTUBE_API_KEY.substring(0, 10)}...`);
           const searchQuery = `${songTitle} ${songDifficulty || ''} chart view`.trim();
           const response = await fetch(
             `https://www.googleapis.com/youtube/v3/search?` +
@@ -113,7 +112,6 @@ function apiPlugin(env: Record<string, string>): Plugin {
             videoUrl: `https://www.youtube.com/watch?v=${item.id.videoId}`
           }));
 
-          console.log(`Found ${videos.length} YouTube videos for "${searchQuery}"`);
           res.statusCode = 200;
           res.setHeader('Content-Type', 'application/json');
           res.end(JSON.stringify(videos));

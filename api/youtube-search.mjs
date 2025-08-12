@@ -1,29 +1,4 @@
-import { VercelRequest, VercelResponse } from '@vercel/node';
-
-interface YouTubeVideo {
-  id: string;
-  title: string;
-  channelTitle: string;
-  thumbnailUrl: string;
-  videoUrl: string;
-}
-
-interface YouTubeAPIItem {
-  id: {
-    videoId: string;
-  };
-  snippet: {
-    title: string;
-    channelTitle: string;
-    thumbnails: {
-      medium: {
-        url: string;
-      };
-    };
-  };
-}
-
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+export default async function handler(req, res) {
   // Enable CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -48,10 +23,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
   
-  if (!YOUTUBE_API_KEY) {
+  if (!YOUTUBE_API_KEY || YOUTUBE_API_KEY === 'your_youtube_api_key_here') {
     console.warn('YouTube API key not configured');
     // Return mock data for development
-    const mockVideos: YouTubeVideo[] = [
+    const mockVideos = [
       {
         id: 'mock1',
         title: `${songTitle} - Chart View`,
@@ -98,7 +73,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const data = await response.json();
     
-    const videos: YouTubeVideo[] = data.items.map((item: YouTubeAPIItem) => ({
+    const videos = data.items.map((item) => ({
       id: item.id.videoId,
       title: item.snippet.title,
       channelTitle: item.snippet.channelTitle,
@@ -111,4 +86,4 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     console.error('Error searching YouTube videos:', error);
     res.status(500).json({ error: 'Failed to search YouTube videos' });
   }
-}
+} 
