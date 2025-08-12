@@ -9,6 +9,11 @@ A basic web application for browsing and searching Arcaea charts.
 - **Difficulty Range**:  Slider for filtering by chart constant (1.0 - 12.0+)
 - **Difficulty Types**: Filter by Past, Present, Future, Eternal, and Beyond difficulties
 
+### **Chart View**
+- **YouTube Integration**: Each song card includes a "Chart View" button
+- **Fullscreen Video Player**: Videos open in a locked fullscreen overlay
+- **Auto Search**: Automatically searches for chart view videos using YouTube API
+
 ## Technologies
 - **Frontend**: React, TypeScript, Tailwind
 - **Backend**: Supabase
@@ -34,12 +39,17 @@ A basic web application for browsing and searching Arcaea charts.
    npm install
    ```
 
-3. **Set up Supabase**
+3. **Set up environment variables**
    ```bash
    # Create a .env.local file
    echo "VITE_SUPABASE_URL=your_supabase_project_url" >> .env.local
    echo "VITE_SUPABASE_ANON_KEY=your_supabase_anon_key" >> .env.local
+   
+   # Optional: For YouTube chart view videos
+   echo "VITE_YOUTUBE_API_KEY=your_youtube_api_key" >> .env.local
    ```
+   
+   **Note**: The YouTube API key is optional. Without it, the app will show demo videos for chart view functionality.
 
 4. **Start development server**
    ```bash

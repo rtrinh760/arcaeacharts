@@ -4,6 +4,8 @@ import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getSongs, type Song } from "@/lib/supabase";
+import { searchChartViewVideos, type YouTubeVideo } from "@/lib/youtube";
+import { VideoOverlay } from "@/components/VideoOverlay";
 
 const Index = () => {
   const [query, setQuery] = useState("");
@@ -25,6 +27,8 @@ const Index = () => {
     "constant"
   );
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [selectedVideo, setSelectedVideo] = useState<string | null>(null);
+  const [videoCache, setVideoCache] = useState<Map<string, YouTubeVideo[]>>(new Map());
   const difficultyTypes = ["Past", "Present", "Future", "Eternal", "Beyond"];
 
   const getDifficultyColor = (difficulty: string): string => {
@@ -53,6 +57,20 @@ const Index = () => {
           ? prev.filter((d) => d !== difficulty) // remove if already selected
           : [...prev, difficulty] // add if not selected
     );
+  };
+
+  const handleChartView = async (songTitle: string, songDifficulty: string) => {
+    let videos = videoCache.get(songTitle);
+    
+    if (!videos) {
+      videos = await searchChartViewVideos(songTitle, songDifficulty);
+      setVideoCache(prev => new Map(prev).set(songTitle, videos || []));
+    }
+    
+    if (videos && videos.length > 0) {
+      // Use the first (most relevant) video
+      setSelectedVideo(videos[0].id);
+    }
   };
 
   useEffect(() => {
@@ -409,7 +427,7 @@ const Index = () => {
                       </div>
                       <div className="flex flex-col items-end gap-2">
                         <Badge
-                          className="select-none h-6 md:h-8 min-w-[100px] md:min-w-[140px] justify-center text-xs md:text-sm font-medium font-mono border-2"
+                          className="select-none h-6 md:h-8 min-w-[120px] md:min-w-[140px] justify-center text-xs md:text-sm font-medium font-mono border-2"
                           style={{
                             backgroundColor: "#4e356f",
                             borderColor: "#4e356f",
@@ -420,7 +438,7 @@ const Index = () => {
                           {"Level:    " + song.level}
                         </Badge>
                         <Badge
-                          className="select-none h-6 md:h-8 min-w-[100px] md:min-w-[140px] justify-center text-xs md:text-sm font-medium font-mono border-2"
+                          className="select-none h-6 md:h-8 min-w-[120px] md:min-w-[140px] justify-center text-xs md:text-sm font-medium font-mono border-2"
                           style={{
                             backgroundColor: "#f9fafb",
                             borderColor: "#4e356f",
@@ -430,6 +448,14 @@ const Index = () => {
                         >
                           {"Constant: " + song.constant}
                         </Badge>
+                        <Button
+                          onClick={() => handleChartView(song.title, song.difficulty)}
+                          variant="outline"
+                          size="sm"
+                          className="text-xs font-medium bg-red-50 border-red-200 hover:bg-red-100 hover:border-red-300 text-red-700"
+                        >
+                          Chart View
+                        </Button>
                       </div>
                     </article>
                   </li>
@@ -539,6 +565,13 @@ const Index = () => {
           </div>
         </div>
       </footer>
+
+      {/* Video Overlay */}
+      <VideoOverlay
+        videoId={selectedVideo || ""}
+        isOpen={!!selectedVideo}
+        onClose={() => setSelectedVideo(null)}
+      />
     </div>
   );
 };
