@@ -1,0 +1,114 @@
+import { VercelRequest, VercelResponse } from '@vercel/node';
+
+interface YouTubeVideo {
+  id: string;
+  title: string;
+  channelTitle: string;
+  thumbnailUrl: string;
+  videoUrl: string;
+}
+
+interface YouTubeAPIItem {
+  id: {
+    videoId: string;
+  };
+  snippet: {
+    title: string;
+    channelTitle: string;
+    thumbnails: {
+      medium: {
+        url: string;
+      };
+    };
+  };
+}
+
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  // Enable CORS
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
+
+  if (req.method !== 'GET') {
+    res.status(405).json({ error: 'Method not allowed' });
+    return;
+  }
+
+  const { songTitle, songDifficulty } = req.query;
+
+  if (!songTitle || typeof songTitle !== 'string') {
+    res.status(400).json({ error: 'songTitle parameter is required' });
+    return;
+  }
+
+  const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
+  
+  if (!YOUTUBE_API_KEY) {
+    console.warn('YouTube API key not configured');
+    // Return mock data for development
+    const mockVideos: YouTubeVideo[] = [
+      {
+        id: 'mock1',
+        title: `${songTitle} - Chart View`,
+        channelTitle: 'Chart Player',
+        thumbnailUrl: 'https://img.youtube.com/vi/dQw4w9WgXcQ/mqdefault.jpg',
+        videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
+      },
+      {
+        id: 'mock2', 
+        title: `${songTitle} - Full Combo`,
+        channelTitle: 'Pro Player',
+        thumbnailUrl: 'https://img.youtube.com/vi/dQw4w9WgXcQ/mqdefault.jpg',
+        videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
+      },
+      {
+        id: 'mock3',
+        title: `${songTitle} - Perfect Play`,
+        channelTitle: 'Master Player', 
+        thumbnailUrl: 'https://img.youtube.com/vi/dQw4w9WgXcQ/mqdefault.jpg',
+        videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
+      }
+    ];
+    res.status(200).json(mockVideos);
+    return;
+  }
+
+  try {
+    const searchQuery = `${songTitle} ${songDifficulty || ''} chart view`.trim();
+    const response = await fetch(
+      `https://www.googleapis.com/youtube/v3/search?` +
+      new URLSearchParams({
+        part: 'snippet',
+        q: searchQuery,
+        type: 'video',
+        maxResults: '3',
+        key: YOUTUBE_API_KEY,
+        order: 'relevance'
+      })
+    );
+
+    if (!response.ok) {
+      throw new Error(`YouTube API request failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+    
+    const videos: YouTubeVideo[] = data.items.map((item: YouTubeAPIItem) => ({
+      id: item.id.videoId,
+      title: item.snippet.title,
+      channelTitle: item.snippet.channelTitle,
+      thumbnailUrl: item.snippet.thumbnails.medium.url,
+      videoUrl: `https://www.youtube.com/watch?v=${item.id.videoId}`
+    }));
+
+    res.status(200).json(videos);
+  } catch (error) {
+    console.error('Error searching YouTube videos:', error);
+    res.status(500).json({ error: 'Failed to search YouTube videos' });
+  }
+}

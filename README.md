@@ -46,7 +46,8 @@ A basic web application for browsing and searching Arcaea charts.
    echo "VITE_SUPABASE_ANON_KEY=your_supabase_anon_key" >> .env.local
    
    # Optional: For YouTube chart view videos
-   echo "VITE_YOUTUBE_API_KEY=your_youtube_api_key" >> .env.local
+   # Add the following to Vercel environment variables:
+   YOUTUBE_API_KEY=your_youtube_api_key
    ```
    
    **Note**: The YouTube API key is optional. Without it, the app will show demo videos for chart view functionality.
