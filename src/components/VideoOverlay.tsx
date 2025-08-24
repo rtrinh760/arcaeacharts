@@ -16,6 +16,8 @@ export const VideoOverlay = ({ videoId, isOpen, onClose }: VideoOverlayProps) =>
   const [showPlayOverlay, setShowPlayOverlay] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [playbackRate, setPlaybackRate] = useState(1);
+  const [timeInput, setTimeInput] = useState('0:00');
+  const [isEditingTime, setIsEditingTime] = useState(false);
 
   // Detect mobile device
   useEffect(() => {
@@ -275,6 +277,66 @@ export const VideoOverlay = ({ videoId, isOpen, onClose }: VideoOverlayProps) =>
     }
   };
 
+  // Time input functions
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const parseTimeInput = (input: string) => {
+    const parts = input.split(':');
+    if (parts.length === 2) {
+      const mins = parseInt(parts[0]) || 0;
+      const secs = parseInt(parts[1]) || 0;
+      return mins * 60 + secs;
+    }
+    return 0;
+  };
+
+  const handleTimeInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setTimeInput(e.target.value);
+  };
+
+  const handleTimeInputSubmit = () => {
+    const newTime = parseTimeInput(timeInput);
+    setCurrentTime(newTime);
+    setHasUserInteracted(true);
+    setIsEditingTime(false);
+    
+    // Use postMessage to seek video
+    if (iframeRef.current) {
+      iframeRef.current.contentWindow?.postMessage(
+        `{"event":"command","func":"seekTo","args":[${newTime}, true]}`,
+        'https://www.youtube.com'
+      );
+      
+      // Reapply playback speed after seeking if not 1x
+      if (playbackRate !== 1) {
+        setTimeout(() => {
+          iframeRef.current?.contentWindow?.postMessage(
+            `{"event":"command","func":"setPlaybackRate","args":[${playbackRate}]}`,
+            'https://www.youtube.com'
+          );
+        }, 500);
+      }
+    }
+  };
+
+  const handleTimeInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleTimeInputSubmit();
+    } else if (e.key === 'Escape') {
+      setIsEditingTime(false);
+      setTimeInput(formatTime(currentTime));
+    }
+  };
+
+  const handleTimeDisplayClick = () => {
+    setIsEditingTime(true);
+    setTimeInput(formatTime(currentTime));
+  };
+
   // Close function for Escape key
   const handleClose = () => {
     onClose();
@@ -396,14 +458,28 @@ export const VideoOverlay = ({ videoId, isOpen, onClose }: VideoOverlayProps) =>
             +{(10 * playbackRate).toFixed(1)}s
           </Button>
           
-          {/* Time display next to forward button */}
-          <Button
-            variant="secondary"
-            size="sm"
-            className="bg-black/70 text-white border border-white/20 pointer-events-none"
-          >
-            {Math.floor(currentTime / 60)}:{(currentTime % 60).toFixed(0).padStart(2, '0')}
-          </Button>
+          {/* Time display/input next to forward button */}
+          {isEditingTime ? (
+            <input
+              type="text"
+              value={timeInput}
+              onChange={handleTimeInputChange}
+              onKeyDown={handleTimeInputKeyDown}
+              onBlur={handleTimeInputSubmit}
+              className="bg-black/70 text-white border border-white/20 rounded px-3 py-1 text-sm w-16 text-center"
+              placeholder="0:00"
+              autoFocus
+            />
+          ) : (
+            <Button
+              variant="secondary"
+              size="sm"
+              className="bg-black/70 hover:bg-black/90 text-white border border-white/20 cursor-pointer"
+              onClick={handleTimeDisplayClick}
+            >
+              {formatTime(currentTime)}
+            </Button>
+          )}
         </div>
       )}
 
