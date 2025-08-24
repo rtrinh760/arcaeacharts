@@ -339,6 +339,10 @@ export const VideoOverlay = ({ videoId, isOpen, onClose }: VideoOverlayProps) =>
 
   // Close function for Escape key
   const handleClose = () => {
+    // Reset time and playback speed when closing
+    setCurrentTime(0);
+    setPlaybackRate(1);
+    setIsEditingTime(false);
     onClose();
   };
 
