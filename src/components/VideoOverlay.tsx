@@ -13,11 +13,12 @@ export const VideoOverlay = ({ videoId, isOpen, onClose }: VideoOverlayProps) =>
   const [iframeKey, setIframeKey] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
   const [hasUserInteracted, setHasUserInteracted] = useState(false);
-  const [showPlayOverlay, setShowPlayOverlay] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [playbackRate, setPlaybackRate] = useState(1);
   const [timeInput, setTimeInput] = useState('0:00');
   const [isEditingTime, setIsEditingTime] = useState(false);
+  const [speedInput, setSpeedInput] = useState('1.00');
+  const [isEditingSpeed, setIsEditingSpeed] = useState(false);
 
   // Detect mobile device
   useEffect(() => {
@@ -25,7 +26,6 @@ export const VideoOverlay = ({ videoId, isOpen, onClose }: VideoOverlayProps) =>
       const userAgent = navigator.userAgent.toLowerCase();
       const isMobileDevice = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/.test(userAgent);
       setIsMobile(isMobileDevice);
-      setShowPlayOverlay(isMobileDevice);
       
       if (!isMobileDevice) {
         setIsPlaying(true);
@@ -151,7 +151,6 @@ export const VideoOverlay = ({ videoId, isOpen, onClose }: VideoOverlayProps) =>
   const handleInitialPlay = () => {
     setHasUserInteracted(true);
     setIsPlaying(true);
-    setShowPlayOverlay(false);
     setIframeKey(prev => prev + 1);
   };
 
@@ -250,17 +249,44 @@ export const VideoOverlay = ({ videoId, isOpen, onClose }: VideoOverlayProps) =>
     }
   };
 
-  const handleSpeedReset = () => {
-    setPlaybackRate(1);
+  // Speed input functions
+  const parseSpeedInput = (input: string) => {
+    const speed = parseFloat(input);
+    if (isNaN(speed)) return 1;
+    return Math.max(0.25, Math.min(2, speed)); // Clamp between 0.25 and 2
+  };
+
+  const handleSpeedInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSpeedInput(e.target.value);
+  };
+
+  const handleSpeedInputSubmit = () => {
+    const newRate = parseSpeedInput(speedInput);
+    setPlaybackRate(newRate);
     setHasUserInteracted(true);
+    setIsEditingSpeed(false);
     
-    // Use postMessage to reset playback rate to 1x
+    // Use postMessage to change playback rate
     if (iframeRef.current) {
       iframeRef.current.contentWindow?.postMessage(
-        '{"event":"command","func":"setPlaybackRate","args":[1]}',
+        `{"event":"command","func":"setPlaybackRate","args":[${newRate}]}`,
         'https://www.youtube.com'
       );
     }
+  };
+
+  const handleSpeedInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleSpeedInputSubmit();
+    } else if (e.key === 'Escape') {
+      setIsEditingSpeed(false);
+      setSpeedInput(playbackRate.toFixed(2));
+    }
+  };
+
+  const handleSpeedDisplayClick = () => {
+    setIsEditingSpeed(true);
+    setSpeedInput(playbackRate.toFixed(2));
   };
 
   const handleSpeedIncrease = () => {
@@ -366,7 +392,7 @@ export const VideoOverlay = ({ videoId, isOpen, onClose }: VideoOverlayProps) =>
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black">
+    <div className={`fixed inset-0 z-50 bg-black ${isMobile ? 'transform rotate-90 origin-center' : ''}`} style={isMobile ? { width: '100vh', height: '100vw', left: 'calc((100vw - 100vh) / 2)', top: 'calc((100vh - 100vw) / 2)' } : {}}>
       {/* Video iframe */}
       <div className="relative w-full h-full">
         <iframe
@@ -380,44 +406,21 @@ export const VideoOverlay = ({ videoId, isOpen, onClose }: VideoOverlayProps) =>
         />
         
         {/* Transparent overlay to block all interactions with video only */}
-        {!showPlayOverlay && (
-          <div 
-            className="absolute inset-0 bg-transparent z-10"
-            style={{
-              touchAction: 'none',
-              userSelect: 'none',
-              WebkitUserSelect: 'none',
-              WebkitTouchCallout: 'none',
-              pointerEvents: 'auto'
-            }}
-            onTouchStart={(e) => e.preventDefault()}
-            onTouchMove={(e) => e.preventDefault()}
-            onTouchEnd={(e) => e.preventDefault()}
-            onMouseDown={(e) => e.preventDefault()}
-            onClick={(e) => e.preventDefault()}
-          />
-        )}
-        
-        {/* Large play overlay for mobile */}
-        {showPlayOverlay && (
-          <div 
-            className="absolute inset-0 bg-black/50 flex items-center justify-center cursor-pointer"
-            onClick={handleInitialPlay}
-            data-allow-click="true"
-          >
-            <div className="text-center text-white">
-              <div className="mb-4">
-                <div className="w-20 h-20 mx-auto bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
-                  <svg className="w-8 h-8 ml-1" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M8 5v14l11-7z"/>
-                  </svg>
-                </div>
-              </div>
-              <p className="text-lg font-medium">Tap to Play Video</p>
-              <p className="text-sm opacity-75 mt-1">Chart Practice Mode</p>
-            </div>
-          </div>
-        )}
+        <div 
+          className="absolute inset-0 bg-transparent z-10"
+          style={{
+            touchAction: 'none',
+            userSelect: 'none',
+            WebkitUserSelect: 'none',
+            WebkitTouchCallout: 'none',
+            pointerEvents: 'auto'
+          }}
+          onTouchStart={(e) => e.preventDefault()}
+          onTouchMove={(e) => e.preventDefault()}
+          onTouchEnd={(e) => e.preventDefault()}
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={(e) => e.preventDefault()}
+        />
       </div>
 
       {/* Close button - minimal */}
@@ -426,43 +429,25 @@ export const VideoOverlay = ({ videoId, isOpen, onClose }: VideoOverlayProps) =>
           onClick={handleClose}
           variant="secondary"
           size="sm"
-          className="bg-red-600/70 hover:bg-red-700/90 text-white border border-red-400/20"
+          className={`bg-red-600/70 hover:bg-red-700/90 text-white border border-red-400/20 ${isMobile ? 'text-xs px-2 py-1 min-h-0 h-6' : ''}`}
         >
           ✕
         </Button>
       </div>
 
       {/* Rewind/Play/Forward buttons - top left */}
-      {!showPlayOverlay && (
-        <div className="absolute top-4 left-4 flex gap-2 z-50">
+      {(
+        <div className={`absolute top-4 left-4 flex z-50 ${isMobile ? 'gap-1 items-center' : 'gap-2'}`}>
           <Button
             onClick={handleRewind}
             variant="secondary"
             size="sm"
-            className="bg-black/70 hover:bg-black/90 text-white border border-white/20"
+            className={`bg-black/70 hover:bg-black/90 text-white border border-white/20 ${isMobile ? 'text-xs px-2 py-1 min-h-0 h-6' : ''}`}
           >
             -{(10 * playbackRate).toFixed(1)}s
           </Button>
           
-          <Button
-            onClick={handlePlayPause}
-            variant="secondary"
-            size="sm"
-            className="bg-black/70 hover:bg-black/90 text-white border border-white/20 px-4"
-          >
-            {isPlaying ? 'Pause' : 'Play'}
-          </Button>
-          
-          <Button
-            onClick={handleForward}
-            variant="secondary"
-            size="sm"
-            className="bg-black/70 hover:bg-black/90 text-white border border-white/20"
-          >
-            +{(10 * playbackRate).toFixed(1)}s
-          </Button>
-          
-          {/* Time display/input next to forward button */}
+          {/* Time display/input */}
           {isEditingTime ? (
             <input
               type="text"
@@ -470,7 +455,7 @@ export const VideoOverlay = ({ videoId, isOpen, onClose }: VideoOverlayProps) =>
               onChange={handleTimeInputChange}
               onKeyDown={handleTimeInputKeyDown}
               onBlur={handleTimeInputSubmit}
-              className="bg-black/70 text-white border border-white/20 rounded px-3 py-1 text-sm w-16 text-center"
+              className={`bg-black/70 text-white border border-white/20 rounded text-center ${isMobile ? 'px-2 py-1 text-xs w-12 h-6' : 'px-3 py-1 text-sm w-16'}`}
               placeholder="0:00"
               autoFocus
             />
@@ -478,43 +463,75 @@ export const VideoOverlay = ({ videoId, isOpen, onClose }: VideoOverlayProps) =>
             <Button
               variant="secondary"
               size="sm"
-              className="bg-black/70 hover:bg-black/90 text-white border border-white/20 cursor-pointer"
+              className={`bg-black/70 hover:bg-black/90 text-white border border-white/20 cursor-pointer ${isMobile ? 'text-xs px-2 py-1 min-h-0 h-6' : ''}`}
               onClick={handleTimeDisplayClick}
             >
               {formatTime(currentTime)}
             </Button>
           )}
+          
+          <Button
+            onClick={handleForward}
+            variant="secondary"
+            size="sm"
+            className={`bg-black/70 hover:bg-black/90 text-white border border-white/20 ${isMobile ? 'text-xs px-2 py-1 min-h-0 h-6' : ''}`}
+          >
+            +{(10 * playbackRate).toFixed(1)}s
+          </Button>
+          
+          <Button
+            onClick={handlePlayPause}
+            variant="secondary"
+            size="sm"
+            className={`bg-black/70 hover:bg-black/90 text-white border border-white/20 ${isMobile ? 'text-xs px-2 py-1 min-h-0 h-6' : 'px-4'}`}
+          >
+            {isPlaying ? 'Pause' : 'Play'}
+          </Button>
         </div>
       )}
 
       {/* Speed controls - top right */}
-      {!showPlayOverlay && (
-        <div className="absolute top-4 right-24 flex gap-2 z-50">
+      {(
+        <div className={`absolute top-4 right-16 flex z-50 ${isMobile ? 'gap-1 items-center' : 'gap-2'}`}>
           <Button
             onClick={handleSpeedDecrease}
             variant="secondary"
             size="sm"
-            className="bg-black/70 hover:bg-black/90 text-white border border-white/20"
+            className={`bg-black/70 hover:bg-black/90 text-white border border-white/20 ${isMobile ? 'text-xs px-2 py-1 min-h-0 h-6' : ''}`}
           >
-            Slow
+            -0.25
           </Button>
           
-          <Button
-            onClick={handleSpeedReset}
-            variant="secondary"
-            size="sm"
-            className="bg-black/70 hover:bg-black/90 text-white border border-white/20 px-4"
-          >
-            {playbackRate.toFixed(2)}x
-          </Button>
+          {/* Speed display/input */}
+          {isEditingSpeed ? (
+            <input
+              type="text"
+              value={speedInput}
+              onChange={handleSpeedInputChange}
+              onKeyDown={handleSpeedInputKeyDown}
+              onBlur={handleSpeedInputSubmit}
+              className={`bg-black/70 text-white border border-white/20 rounded text-center ${isMobile ? 'px-2 py-1 text-xs w-12 h-6' : 'px-3 py-1 text-sm w-16'}`}
+              placeholder="1.00"
+              autoFocus
+            />
+          ) : (
+            <Button
+              variant="secondary"
+              size="sm"
+              className={`bg-black/70 hover:bg-black/90 text-white border border-white/20 cursor-pointer ${isMobile ? 'text-xs px-2 py-1 min-h-0 h-6' : 'px-4'}`}
+              onClick={handleSpeedDisplayClick}
+            >
+              {playbackRate.toFixed(2)}x
+            </Button>
+          )}
           
           <Button
             onClick={handleSpeedIncrease}
             variant="secondary"
             size="sm"
-            className="bg-black/70 hover:bg-black/90 text-white border border-white/20"
+            className={`bg-black/70 hover:bg-black/90 text-white border border-white/20 ${isMobile ? 'text-xs px-2 py-1 min-h-0 h-6' : ''}`}
           >
-            Fast
+            +0.25
           </Button>
         </div>
       )}
