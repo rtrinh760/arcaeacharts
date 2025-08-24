@@ -169,6 +169,16 @@ export const VideoOverlay = ({ videoId, isOpen, onClose }: VideoOverlayProps) =>
         `{"event":"command","func":"${command}","args":""}`,
         'https://www.youtube.com'
       );
+      
+      // If unpausing and speed is not 1x, apply the current playback rate
+      if (!isPlaying && playbackRate !== 1) {
+        setTimeout(() => {
+          iframeRef.current?.contentWindow?.postMessage(
+            `{"event":"command","func":"setPlaybackRate","args":[${playbackRate}]}`,
+            'https://www.youtube.com'
+          );
+        }, 500); // Half second delay to ensure play command is processed first
+      }
     }
   };
 
@@ -185,6 +195,16 @@ export const VideoOverlay = ({ videoId, isOpen, onClose }: VideoOverlayProps) =>
         `{"event":"command","func":"seekTo","args":[${newTime}, true]}`,
         'https://www.youtube.com'
       );
+      
+      // Reapply playback speed after seeking if not 1x
+      if (playbackRate !== 1) {
+        setTimeout(() => {
+          iframeRef.current?.contentWindow?.postMessage(
+            `{"event":"command","func":"setPlaybackRate","args":[${playbackRate}]}`,
+            'https://www.youtube.com'
+          );
+        }, 500); // Half second delay to ensure seek command is processed first
+      }
     }
   };
 
@@ -201,6 +221,16 @@ export const VideoOverlay = ({ videoId, isOpen, onClose }: VideoOverlayProps) =>
         `{"event":"command","func":"seekTo","args":[${newTime}, true]}`,
         'https://www.youtube.com'
       );
+      
+      // Reapply playback speed after seeking if not 1x
+      if (playbackRate !== 1) {
+        setTimeout(() => {
+          iframeRef.current?.contentWindow?.postMessage(
+            `{"event":"command","func":"setPlaybackRate","args":[${playbackRate}]}`,
+            'https://www.youtube.com'
+          );
+        }, 500); // Half second delay to ensure seek command is processed first
+      }
     }
   };
 
@@ -336,16 +366,16 @@ export const VideoOverlay = ({ videoId, isOpen, onClose }: VideoOverlayProps) =>
         </Button>
       </div>
 
-      {/* All control buttons in single row at bottom */}
+      {/* Rewind/Play/Forward buttons - top left */}
       {!showPlayOverlay && (
-        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2 z-50">
+        <div className="absolute top-4 left-4 flex gap-2 z-50">
           <Button
             onClick={handleRewind}
             variant="secondary"
             size="sm"
             className="bg-black/70 hover:bg-black/90 text-white border border-white/20"
           >
-            ⏪ -{(10 * playbackRate).toFixed(1)}s
+            -{(10 * playbackRate).toFixed(1)}s
           </Button>
           
           <Button
@@ -354,7 +384,7 @@ export const VideoOverlay = ({ videoId, isOpen, onClose }: VideoOverlayProps) =>
             size="sm"
             className="bg-black/70 hover:bg-black/90 text-white border border-white/20 px-4"
           >
-            {isPlaying ? '⏸️ Pause' : '▶️ Play'}
+            {isPlaying ? 'Pause' : 'Play'}
           </Button>
           
           <Button
@@ -363,9 +393,23 @@ export const VideoOverlay = ({ videoId, isOpen, onClose }: VideoOverlayProps) =>
             size="sm"
             className="bg-black/70 hover:bg-black/90 text-white border border-white/20"
           >
-            ⏩ +{(10 * playbackRate).toFixed(1)}s
+            +{(10 * playbackRate).toFixed(1)}s
           </Button>
           
+          {/* Time display next to forward button */}
+          <Button
+            variant="secondary"
+            size="sm"
+            className="bg-black/70 text-white border border-white/20 pointer-events-none"
+          >
+            {Math.floor(currentTime / 60)}:{(currentTime % 60).toFixed(0).padStart(2, '0')}
+          </Button>
+        </div>
+      )}
+
+      {/* Speed controls - top right */}
+      {!showPlayOverlay && (
+        <div className="absolute top-4 right-24 flex gap-2 z-50">
           <Button
             onClick={handleSpeedDecrease}
             variant="secondary"
