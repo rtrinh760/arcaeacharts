@@ -10,11 +10,12 @@ interface VideoOverlayProps {
 export const VideoOverlay = ({ videoId, isOpen, onClose }: VideoOverlayProps) => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
   const [iframeKey, setIframeKey] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
   const [hasUserInteracted, setHasUserInteracted] = useState(false);
   const [showPlayOverlay, setShowPlayOverlay] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [playbackRate, setPlaybackRate] = useState(1);
 
   // Detect mobile device
   useEffect(() => {
@@ -34,76 +35,118 @@ export const VideoOverlay = ({ videoId, isOpen, onClose }: VideoOverlayProps) =>
 
   useEffect(() => {
     if (isOpen) {
-      // Strong body lock for gesture prevention
+      // Prevent scrolling and mobile gestures
       document.body.style.overflow = 'hidden';
       document.body.style.position = 'fixed';
       document.body.style.width = '100%';
       document.body.style.height = '100%';
-      document.body.style.touchAction = 'none';
       
-      // Aggressive viewport control for iOS
-      const viewportMeta = document.querySelector('meta[name="viewport"]') as HTMLMetaElement;
-      const originalViewport = viewportMeta?.getAttribute('content') || '';
-      
-      if (viewportMeta) {
-        viewportMeta.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover');
-      }
-      
-      // Prevent ALL gestures except on specific control areas
-      const preventGestures = (e: TouchEvent) => {
-        const target = e.target as Element;
+      // Listen for YouTube player time updates
+      const handleMessage = (event: MessageEvent) => {
+        if (event.origin !== 'https://www.youtube.com') return;
         
-        // Only allow touches on our specific control elements
-        if (target?.closest('.video-controls') || target?.closest('.play-overlay')) {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.event === 'video-progress') {
+            setCurrentTime(data.info?.currentTime || 0);
+          }
+        } catch {
+          // Ignore invalid JSON
+        }
+      };
+      
+      window.addEventListener('message', handleMessage);
+      
+      // Prevent touch events and gestures only outside of buttons
+      const preventTouch = (e: TouchEvent) => {
+        const target = e.target as HTMLElement;
+        // Allow touches on buttons and elements with data-allow-click
+        if (target.closest('button') || target.closest('[data-allow-click]')) {
           return;
         }
-        
-        // Block everything else
         e.preventDefault();
         e.stopPropagation();
       };
       
-      const preventZoom = (e: Event) => {
+      const preventGestures = (e: Event) => {
+        const target = e.target as HTMLElement;
+        // Allow gestures on buttons and elements with data-allow-click
+        if (target.closest('button') || target.closest('[data-allow-click]')) {
+          return;
+        }
         e.preventDefault();
         e.stopPropagation();
       };
       
-      // More aggressive event prevention
-      document.addEventListener('touchstart', preventGestures, { passive: false, capture: true });
-      document.addEventListener('touchmove', preventGestures, { passive: false, capture: true });
-      document.addEventListener('touchend', preventGestures, { passive: false, capture: true });
-      document.addEventListener('gesturestart', preventZoom, { passive: false, capture: true });
-      document.addEventListener('gesturechange', preventZoom, { passive: false, capture: true });
-      document.addEventListener('gestureend', preventZoom, { passive: false, capture: true });
+      const preventMouse = (e: MouseEvent) => {
+        const target = e.target as HTMLElement;
+        // Allow clicks on buttons and elements with data-allow-click
+        if (target.closest('button') || target.closest('[data-allow-click]')) {
+          return;
+        }
+        e.preventDefault();
+        e.stopPropagation();
+      };
+      
+      // Add event listeners
+      document.addEventListener('touchstart', preventTouch, { passive: false });
+      document.addEventListener('touchmove', preventTouch, { passive: false });
+      document.addEventListener('touchend', preventTouch, { passive: false });
+      document.addEventListener('touchcancel', preventTouch, { passive: false });
+      document.addEventListener('gesturestart', preventGestures, { passive: false });
+      document.addEventListener('gesturechange', preventGestures, { passive: false });
+      document.addEventListener('gestureend', preventGestures, { passive: false });
+      document.addEventListener('click', preventMouse, { passive: false });
+      document.addEventListener('mousedown', preventMouse, { passive: false });
+      document.addEventListener('mouseup', preventMouse, { passive: false });
       
       return () => {
-        // Restore everything
+        // Restore scroll and body styles
         document.body.style.overflow = '';
         document.body.style.position = '';
         document.body.style.width = '';
         document.body.style.height = '';
-        document.body.style.touchAction = '';
         
-        if (viewportMeta && originalViewport) {
-          viewportMeta.setAttribute('content', originalViewport);
-        }
-        
-        // Remove all listeners
-        document.removeEventListener('touchstart', preventGestures, { capture: true });
-        document.removeEventListener('touchmove', preventGestures, { capture: true });
-        document.removeEventListener('touchend', preventGestures, { capture: true });
-        document.removeEventListener('gesturestart', preventZoom, { capture: true });
-        document.removeEventListener('gesturechange', preventZoom, { capture: true });
-        document.removeEventListener('gestureend', preventZoom, { capture: true });
+        // Remove event listeners
+        window.removeEventListener('message', handleMessage);
+        document.removeEventListener('touchstart', preventTouch);
+        document.removeEventListener('touchmove', preventTouch);
+        document.removeEventListener('touchend', preventTouch);
+        document.removeEventListener('touchcancel', preventTouch);
+        document.removeEventListener('gesturestart', preventGestures);
+        document.removeEventListener('gesturechange', preventGestures);
+        document.removeEventListener('gestureend', preventGestures);
+        document.removeEventListener('click', preventMouse);
+        document.removeEventListener('mousedown', preventMouse);
+        document.removeEventListener('mouseup', preventMouse);
       };
     }
   }, [isOpen]);
+
+  // Request progress updates from YouTube player
+  useEffect(() => {
+    if (!isOpen) return;
+    
+    const requestProgressUpdates = () => {
+      if (iframeRef.current) {
+        // Request listening for progress events
+        iframeRef.current.contentWindow?.postMessage(
+          '{"event":"listening","id":"progress"}',
+          'https://www.youtube.com'
+        );
+      }
+    };
+    
+    // Delay to ensure iframe is loaded
+    const timer = setTimeout(requestProgressUpdates, 1000);
+    
+    return () => clearTimeout(timer);
+  }, [isOpen, iframeKey]);
 
   if (!isOpen) return null;
 
   // Handle initial play on mobile
   const handleInitialPlay = () => {
-    console.log('Initial play clicked on mobile');
     setHasUserInteracted(true);
     setIsPlaying(true);
     setShowPlayOverlay(false);
@@ -111,50 +154,100 @@ export const VideoOverlay = ({ videoId, isOpen, onClose }: VideoOverlayProps) =>
   };
 
   // Video control functions
-  const updateVideoTime = (newTime: number) => {
-    const clampedTime = Math.max(0, newTime);
-    setCurrentTime(clampedTime);
-    setHasUserInteracted(true);
-    setIframeKey(prev => prev + 1);
-  };
-
   const handlePlayPause = () => {
-    console.log('Play/Pause clicked - current state:', isPlaying, 'isMobile:', isMobile);
-    
     if (isMobile && !hasUserInteracted) {
       handleInitialPlay();
       return;
     }
-    
     setHasUserInteracted(true);
     setIsPlaying(prev => !prev);
-    setIframeKey(prev => prev + 1);
+    
+    // Try to communicate with YouTube player via postMessage
+    if (iframeRef.current) {
+      const command = isPlaying ? 'pauseVideo' : 'playVideo';
+      iframeRef.current.contentWindow?.postMessage(
+        `{"event":"command","func":"${command}","args":""}`,
+        'https://www.youtube.com'
+      );
+    }
   };
 
   const handleRewind = () => {
-    console.log('Rewind to start');
-    updateVideoTime(0);
+    // Scale seek time based on playback rate (10s at 1x speed)
+    const seekTime = 10 * playbackRate;
+    const newTime = Math.max(0, currentTime - seekTime);
+    setCurrentTime(newTime);
+    setHasUserInteracted(true);
+    
+    // Use postMessage to seek video
+    if (iframeRef.current) {
+      iframeRef.current.contentWindow?.postMessage(
+        `{"event":"command","func":"seekTo","args":[${newTime}, true]}`,
+        'https://www.youtube.com'
+      );
+    }
   };
 
-  const handleRewind10 = () => {
-    console.log('Rewind 10 seconds from:', currentTime);
-    updateVideoTime(currentTime - 10);
+  const handleForward = () => {
+    // Scale seek time based on playback rate (10s at 1x speed)
+    const seekTime = 10 * playbackRate;
+    const newTime = currentTime + seekTime;
+    setCurrentTime(newTime);
+    setHasUserInteracted(true);
+    
+    // Use postMessage to seek video
+    if (iframeRef.current) {
+      iframeRef.current.contentWindow?.postMessage(
+        `{"event":"command","func":"seekTo","args":[${newTime}, true]}`,
+        'https://www.youtube.com'
+      );
+    }
   };
 
-  const handleForward10 = () => {
-    console.log('Forward 10 seconds from:', currentTime);
-    updateVideoTime(currentTime + 10);
+  const handleSpeedDecrease = () => {
+    const newRate = Math.max(0.25, playbackRate - 0.25);
+    setPlaybackRate(newRate);
+    setHasUserInteracted(true);
+    
+    // Use postMessage to change playback rate
+    if (iframeRef.current) {
+      iframeRef.current.contentWindow?.postMessage(
+        `{"event":"command","func":"setPlaybackRate","args":[${newRate}]}`,
+        'https://www.youtube.com'
+      );
+    }
   };
 
+  const handleSpeedReset = () => {
+    setPlaybackRate(1);
+    setHasUserInteracted(true);
+    
+    // Use postMessage to reset playback rate to 1x
+    if (iframeRef.current) {
+      iframeRef.current.contentWindow?.postMessage(
+        '{"event":"command","func":"setPlaybackRate","args":[1]}',
+        'https://www.youtube.com'
+      );
+    }
+  };
+
+  const handleSpeedIncrease = () => {
+    const newRate = Math.min(2, playbackRate + 0.25);
+    setPlaybackRate(newRate);
+    setHasUserInteracted(true);
+    
+    // Use postMessage to change playback rate
+    if (iframeRef.current) {
+      iframeRef.current.contentWindow?.postMessage(
+        `{"event":"command","func":"setPlaybackRate","args":[${newRate}]}`,
+        'https://www.youtube.com'
+      );
+    }
+  };
+
+  // Close function for Escape key
   const handleClose = () => {
-    console.log('Close clicked');
     onClose();
-  };
-
-  // Open YouTube in app/new tab for mobile as fallback
-  const handleOpenInYouTube = () => {
-    const youtubeUrl = `https://www.youtube.com/watch?v=${videoId}&t=${Math.floor(currentTime)}s`;
-    window.open(youtubeUrl, '_blank');
   };
 
   // Build YouTube URL
@@ -163,7 +256,9 @@ export const VideoOverlay = ({ videoId, isOpen, onClose }: VideoOverlayProps) =>
     const params = new URLSearchParams({
       rel: '0',
       modestbranding: '1',
-      controls: showPlayOverlay ? '0' : '1', // Hide controls during overlay
+      controls: '1', // Always show YouTube controls
+      enablejsapi: '1', // Enable JavaScript API for postMessage
+      origin: window.location.origin,
       start: Math.floor(currentTime).toString()
     });
 
@@ -175,18 +270,7 @@ export const VideoOverlay = ({ videoId, isOpen, onClose }: VideoOverlayProps) =>
   };
 
   return (
-    <div 
-      className="fixed inset-0 z-50 bg-black"
-      style={{
-        touchAction: 'none',
-        userSelect: 'none',
-        WebkitUserSelect: 'none',
-        WebkitTouchCallout: 'none',
-        WebkitTapHighlightColor: 'transparent',
-        WebkitOverflowScrolling: 'touch',
-        overscrollBehavior: 'none'
-      }}
-    >
+    <div className="fixed inset-0 z-50 bg-black">
       {/* Video iframe */}
       <div className="relative w-full h-full">
         <iframe
@@ -197,23 +281,33 @@ export const VideoOverlay = ({ videoId, isOpen, onClose }: VideoOverlayProps) =>
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
           allowFullScreen
           className="w-full h-full border-0"
-          style={{
-            pointerEvents: 'none', // Always block direct iframe interaction
-            touchAction: 'none'
-          }}
         />
+        
+        {/* Transparent overlay to block all interactions with video only */}
+        {!showPlayOverlay && (
+          <div 
+            className="absolute inset-0 bg-transparent z-10"
+            style={{
+              touchAction: 'none',
+              userSelect: 'none',
+              WebkitUserSelect: 'none',
+              WebkitTouchCallout: 'none',
+              pointerEvents: 'auto'
+            }}
+            onTouchStart={(e) => e.preventDefault()}
+            onTouchMove={(e) => e.preventDefault()}
+            onTouchEnd={(e) => e.preventDefault()}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={(e) => e.preventDefault()}
+          />
+        )}
         
         {/* Large play overlay for mobile */}
         {showPlayOverlay && (
           <div 
-            className="play-overlay absolute inset-0 bg-black/50 flex items-center justify-center cursor-pointer"
+            className="absolute inset-0 bg-black/50 flex items-center justify-center cursor-pointer"
             onClick={handleInitialPlay}
-            style={{ 
-              touchAction: 'manipulation',
-              userSelect: 'none',
-              WebkitUserSelect: 'none',
-              WebkitTouchCallout: 'none'
-            }}
+            data-allow-click="true"
           >
             <div className="text-center text-white">
               <div className="mb-4">
@@ -228,106 +322,30 @@ export const VideoOverlay = ({ videoId, isOpen, onClose }: VideoOverlayProps) =>
             </div>
           </div>
         )}
-        
-        {/* Always show gesture blocking overlay */}
-        <div 
-          className="absolute inset-0 bg-transparent"
-          style={{
-            touchAction: 'none',
-            userSelect: 'none',
-            WebkitUserSelect: 'none',
-            WebkitTouchCallout: 'none',
-            pointerEvents: 'none' // Let clicks pass through to elements below
-          }}
-        />
       </div>
-      
-      {/* Video control buttons */}
-      <div 
-        className="video-controls absolute top-4 right-4 flex gap-2 z-50"
-        style={{ 
-          touchAction: 'manipulation',
-          userSelect: 'none',
-          WebkitUserSelect: 'none',
-          WebkitTouchCallout: 'none'
-        }}
-      >
-        {isMobile && (
-          <Button
-            onClick={handleOpenInYouTube}
-            variant="secondary"
-            size="sm"
-            className="bg-blue-600/70 hover:bg-blue-700/90 text-white border border-blue-400/20"
-            style={{ 
-              touchAction: 'manipulation',
-              pointerEvents: 'auto',
-              userSelect: 'none',
-              WebkitUserSelect: 'none',
-              WebkitTouchCallout: 'none'
-            }}
-          >
-            📱 Open in YouTube
-          </Button>
-        )}
-        
+
+      {/* Close button - minimal */}
+      <div className="absolute top-4 right-4 z-50">
         <Button
           onClick={handleClose}
           variant="secondary"
           size="sm"
           className="bg-red-600/70 hover:bg-red-700/90 text-white border border-red-400/20"
-          style={{ 
-            touchAction: 'manipulation',
-            pointerEvents: 'auto',
-            userSelect: 'none',
-            WebkitUserSelect: 'none',
-            WebkitTouchCallout: 'none'
-          }}
         >
-          ✕ Close
+          ✕
         </Button>
       </div>
 
-      {/* Video control panel at bottom - hidden during initial play overlay */}
+      {/* All control buttons in single row at bottom */}
       {!showPlayOverlay && (
-        <div 
-          className="video-controls absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2 z-50"
-          style={{ 
-            touchAction: 'manipulation',
-            userSelect: 'none',
-            WebkitUserSelect: 'none',
-            WebkitTouchCallout: 'none'
-          }}
-        >
+        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2 z-50">
           <Button
             onClick={handleRewind}
             variant="secondary"
             size="sm"
             className="bg-black/70 hover:bg-black/90 text-white border border-white/20"
-            style={{ 
-              touchAction: 'manipulation',
-              pointerEvents: 'auto',
-              userSelect: 'none',
-              WebkitUserSelect: 'none',
-              WebkitTouchCallout: 'none'
-            }}
           >
-            ⏮️ Start
-          </Button>
-          
-          <Button
-            onClick={handleRewind10}
-            variant="secondary"
-            size="sm"
-            className="bg-black/70 hover:bg-black/90 text-white border border-white/20"
-            style={{ 
-              touchAction: 'manipulation',
-              pointerEvents: 'auto',
-              userSelect: 'none',
-              WebkitUserSelect: 'none',
-              WebkitTouchCallout: 'none'
-            }}
-          >
-            ⏪ -10s
+            ⏪ -{(10 * playbackRate).toFixed(1)}s
           </Button>
           
           <Button
@@ -335,49 +353,47 @@ export const VideoOverlay = ({ videoId, isOpen, onClose }: VideoOverlayProps) =>
             variant="secondary"
             size="sm"
             className="bg-black/70 hover:bg-black/90 text-white border border-white/20 px-4"
-            style={{ 
-              touchAction: 'manipulation',
-              pointerEvents: 'auto',
-              userSelect: 'none',
-              WebkitUserSelect: 'none',
-              WebkitTouchCallout: 'none'
-            }}
           >
             {isPlaying ? '⏸️ Pause' : '▶️ Play'}
           </Button>
           
           <Button
-            onClick={handleForward10}
+            onClick={handleForward}
             variant="secondary"
             size="sm"
             className="bg-black/70 hover:bg-black/90 text-white border border-white/20"
-            style={{ 
-              touchAction: 'manipulation',
-              pointerEvents: 'auto',
-              userSelect: 'none',
-              WebkitUserSelect: 'none',
-              WebkitTouchCallout: 'none'
-            }}
           >
-            ⏩ +10s
+            ⏩ +{(10 * playbackRate).toFixed(1)}s
+          </Button>
+          
+          <Button
+            onClick={handleSpeedDecrease}
+            variant="secondary"
+            size="sm"
+            className="bg-black/70 hover:bg-black/90 text-white border border-white/20"
+          >
+            Slow
+          </Button>
+          
+          <Button
+            onClick={handleSpeedReset}
+            variant="secondary"
+            size="sm"
+            className="bg-black/70 hover:bg-black/90 text-white border border-white/20 px-4"
+          >
+            {playbackRate.toFixed(2)}x
+          </Button>
+          
+          <Button
+            onClick={handleSpeedIncrease}
+            variant="secondary"
+            size="sm"
+            className="bg-black/70 hover:bg-black/90 text-white border border-white/20"
+          >
+            Fast
           </Button>
         </div>
       )}
-
-      {/* Status indicator */}
-      <div className="absolute top-4 left-4 bg-black/70 text-white p-3 rounded-md text-sm">
-        <div className="flex items-center gap-2">
-          <span>🎵</span>
-          <span>Chart Practice Mode</span>
-          {isMobile && <span className="text-xs opacity-75">(Mobile)</span>}
-          <span className="text-xs opacity-75">(Gestures Blocked)</span>
-        </div>
-        {!showPlayOverlay && (
-          <div className="text-xs opacity-75 mt-1">
-            Time: {Math.floor(currentTime / 60)}:{(currentTime % 60).toString().padStart(2, '0')}
-          </div>
-        )}
-      </div>
     </div>
   );
 }; 
