@@ -79,7 +79,12 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Acknowledgments
 
+This project is unaffiliated with Arcaea and lowiro, as it is fanmade. Check  them out below:
+
 - [Arcaea](https://arcaea.lowiro.com/)
+
+Check out the Arcaea Wiki for more info about the game:
+
 - [Arcaea Wiki](https://arcaea.fandom.com/wiki/Arcaea_Wiki)
 
 ## Support
