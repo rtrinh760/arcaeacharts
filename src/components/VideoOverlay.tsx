@@ -201,6 +201,7 @@ export const VideoOverlay = ({
     setCurrentTime(0);
     setPlaybackRate(1);
     setIsPlaying(false);
+    setShowSlider(true);
     onClose();
   };
 
@@ -346,7 +347,7 @@ export const VideoOverlay = ({
             isMobile ? "text-xs px-2 py-1 min-h-0 h-6" : ""
           }`}
         >
-          {showSlider ? "Untoggle Slider" : "Toggle Slider"}
+          {showSlider ? "Hide" : "Show"}
         </Button>
       </div>
 
