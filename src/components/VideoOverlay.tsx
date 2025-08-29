@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
+import { Slider } from "@/components/ui/slider";
 import ReactPlayer from "react-player";
 
 interface VideoOverlayProps {
@@ -24,7 +25,9 @@ export const VideoOverlay = ({
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
   const [playbackRate, setPlaybackRate] = useState(1);
+  const [showSlider, setShowSlider] = useState(true);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -124,21 +127,23 @@ export const VideoOverlay = ({
     }
   }, [isOpen]);
 
-  // Video time tracking using interval
+  // Video time and duration tracking using interval
   useEffect(() => {
-    if (!isOpen || !isPlaying) return;
+    if (!isOpen) return;
 
     const interval = setInterval(() => {
-      if (
-        playerRef.current &&
-        typeof playerRef.current.currentTime === "number"
-      ) {
-        setCurrentTime(playerRef.current.currentTime);
+      if (playerRef.current) {
+        if (typeof playerRef.current.currentTime === "number") {
+          setCurrentTime(playerRef.current.currentTime);
+        }
+        if (typeof playerRef.current.duration === "number" && !isNaN(playerRef.current.duration)) {
+          setDuration(playerRef.current.duration);
+        }
       }
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [isOpen, isPlaying]);
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -205,6 +210,20 @@ export const VideoOverlay = ({
     if ("playedSeconds" in state) {
       setCurrentTime(state.playedSeconds);
     }
+  };
+
+
+
+  const handleSliderChange = (value: number[]) => {
+    const newTime = value[0];
+    setCurrentTime(newTime);
+    if (playerRef.current) {
+      playerRef.current.currentTime = newTime;
+    }
+  };
+
+  const toggleSlider = () => {
+    setShowSlider((prev) => !prev);
   };
 
   return (
@@ -318,6 +337,17 @@ export const VideoOverlay = ({
         >
           {isPlaying ? "Pause" : "Play"}
         </Button>
+
+        <Button
+          onClick={toggleSlider}
+          variant="secondary"
+          size="sm"
+          className={`bg-blue-600/70 hover:bg-blue-700/90 text-white border border-blue-400/20 ${
+            isMobile ? "text-xs px-2 py-1 min-h-0 h-6" : ""
+          }`}
+        >
+          {showSlider ? "Untoggle Slider" : "Toggle Slider"}
+        </Button>
       </div>
 
       {/* Speed controls - top right */}
@@ -381,6 +411,31 @@ export const VideoOverlay = ({
           +0.25
         </Button>
       </div>
+
+      {/* Time slider - bottom center */}
+      {showSlider && (
+        <div className="absolute bottom-6 left-8 right-8 z-50">
+          <div className="flex items-center gap-4">
+            <span className="text-white text-sm font-mono bg-black/50 px-2 py-1 rounded">
+              {formatTime(currentTime)}
+            </span>
+            <div className="flex-1 bg-black/30 p-2 rounded-lg backdrop-blur-sm">
+              <Slider
+                value={[currentTime]}
+                onValueChange={handleSliderChange}
+                min={0}
+                max={duration || 100}
+                step={1}
+                aria-label="Video timeline"
+                className="w-full"
+              />
+            </div>
+            <span className="text-white text-sm font-mono bg-black/50 px-2 py-1 rounded">
+              {formatTime(duration)}
+            </span>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
