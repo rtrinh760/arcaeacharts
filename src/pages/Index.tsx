@@ -28,7 +28,9 @@ const Index = () => {
   );
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [selectedVideo, setSelectedVideo] = useState<string | null>(null);
-  const [videoCache, setVideoCache] = useState<Map<string, YouTubeVideo[]>>(new Map());
+  const [videoCache, setVideoCache] = useState<Map<string, YouTubeVideo[]>>(
+    new Map()
+  );
   const difficultyTypes = ["Past", "Present", "Future", "Eternal", "Beyond"];
 
   const getDifficultyColor = (difficulty: string): string => {
@@ -61,12 +63,12 @@ const Index = () => {
 
   const handleChartView = async (songTitle: string, songDifficulty: string) => {
     let videos = videoCache.get(songTitle);
-    
+
     if (!videos) {
       videos = await searchChartViewVideos(songTitle, songDifficulty);
-      setVideoCache(prev => new Map(prev).set(songTitle, videos || []));
+      setVideoCache((prev) => new Map(prev).set(songTitle, videos || []));
     }
-    
+
     if (videos && videos.length > 0) {
       // Use the first (most relevant) video
       setSelectedVideo(videos[0].id);
@@ -449,7 +451,9 @@ const Index = () => {
                           {"Constant: " + song.constant}
                         </Badge>
                         <Button
-                          onClick={() => handleChartView(song.title, song.difficulty)}
+                          onClick={() =>
+                            handleChartView(song.title, song.difficulty)
+                          }
                           variant="outline"
                           size="sm"
                           className="text-xs font-medium bg-red-50 border-red-200 hover:bg-red-100 hover:border-red-300 text-red-700"

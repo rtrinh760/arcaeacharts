@@ -14,7 +14,7 @@ export async function searchChartViewVideos(
     // calls vercel function
     const params = new URLSearchParams({
       songTitle,
-      ...(songDifficulty && { songDifficulty })
+      ...(songDifficulty && { songDifficulty }),
     });
 
     const response = await fetch(`/api/youtube-search?${params}`);
@@ -26,31 +26,31 @@ export async function searchChartViewVideos(
     const videos: YouTubeVideo[] = await response.json();
     return videos;
   } catch (error) {
-    console.error('Error searching YouTube videos:', error);
-    
+    console.error("Error searching YouTube videos:", error);
+
     // mock data on error
     return [
       {
-        id: 'mock1',
+        id: "mock1",
         title: `${songTitle} - Chart View`,
-        channelTitle: 'Chart Player',
-        thumbnailUrl: 'https://img.youtube.com/vi/dQw4w9WgXcQ/mqdefault.jpg',
-        videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
+        channelTitle: "Chart Player",
+        thumbnailUrl: "https://img.youtube.com/vi/dQw4w9WgXcQ/mqdefault.jpg",
+        videoUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
       },
       {
-        id: 'mock2', 
+        id: "mock2",
         title: `${songTitle} - Full Combo`,
-        channelTitle: 'Pro Player',
-        thumbnailUrl: 'https://img.youtube.com/vi/dQw4w9WgXcQ/mqdefault.jpg',
-        videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
+        channelTitle: "Pro Player",
+        thumbnailUrl: "https://img.youtube.com/vi/dQw4w9WgXcQ/mqdefault.jpg",
+        videoUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
       },
       {
-        id: 'mock3',
+        id: "mock3",
         title: `${songTitle} - Perfect Play`,
-        channelTitle: 'Master Player', 
-        thumbnailUrl: 'https://img.youtube.com/vi/dQw4w9WgXcQ/mqdefault.jpg',
-        videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
-      }
+        channelTitle: "Master Player",
+        thumbnailUrl: "https://img.youtube.com/vi/dQw4w9WgXcQ/mqdefault.jpg",
+        videoUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+      },
     ];
   }
 }
