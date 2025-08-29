@@ -53,7 +53,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const searchQuery = `Arcaea ${songTitle} ${songDifficulty || ''} chart view`.trim();
+    const searchQuery = `Stalight Arcaea ${songTitle} ${songDifficulty || ''} chart view`.trim();
     const response = await fetch(
       `https://www.googleapis.com/youtube/v3/search?` +
       new URLSearchParams({
