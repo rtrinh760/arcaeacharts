@@ -14,6 +14,10 @@ A basic web application for browsing and searching Arcaea charts.
 - **Fullscreen Video Player**: Videos open in a locked fullscreen overlay
 - **Auto Search**: Automatically searches for chart view videos using YouTube API
 
+### **Play Rating Calculator**
+- **Interface**: Calculator appears when hovering over song cards
+- **Calculation**: Uses Arcaea score modifier and play rating formulas (from the wiki)
+
 ## Technologies
 - **Frontend**: React, TypeScript, Tailwind
 - **Backend**: Supabase
