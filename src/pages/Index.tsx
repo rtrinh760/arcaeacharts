@@ -31,7 +31,45 @@ const Index = () => {
   const [videoCache, setVideoCache] = useState<Map<string, YouTubeVideo[]>>(
     new Map()
   );
+
+  const [targetRatings, setTargetRatings] = useState<Map<string, string>>(new Map());
   const difficultyTypes = ["Past", "Present", "Future", "Eternal", "Beyond"];
+
+
+
+
+
+  const calculateRequiredScore = (constant: number, targetRating: number): number => {
+    const requiredModifier = targetRating - constant;
+    
+    if (requiredModifier >= 2.0) {
+      return 10000000;
+    }
+    
+    if (requiredModifier >= 1.0) {
+      return Math.round(9800000 + (requiredModifier - 1.0) * 200000);
+    }
+    
+    const calculatedScore = Math.round(9500000 + requiredModifier * 300000);
+    
+    return Math.max(0, Math.min(9800000, calculatedScore));
+  };
+
+
+
+
+
+  const getTargetRating = (songTitle: string, difficulty: string): string => {
+    const key = `${songTitle}-${difficulty}`;
+    return targetRatings.get(key) || "";
+  };
+
+  const updateTargetRating = (songTitle: string, difficulty: string, rating: string) => {
+    const key = `${songTitle}-${difficulty}`;
+    setTargetRatings(prev => new Map(prev).set(key, rating));
+  };
+
+
 
   const getDifficultyColor = (difficulty: string): string => {
     switch (difficulty) {
@@ -398,38 +436,81 @@ const Index = () => {
                     className="group p-4 rounded-lg border bg-card hover:border-ring transition-all duration-200"
                   >
                     <article className="flex items-center gap-4">
-                      <img
-                        src={`https://corsproxy.io/?${encodeURIComponent(
-                          song.imageUrl
-                        )}`}
-                        width={80}
-                        height={80}
-                        loading="lazy"
-                        alt={`Cover art: ${song.title} by ${song.artist}`}
-                        className="h-20 w-20 rounded-md object-cover ring-1 ring-border group-hover:ring-ring transition"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-lg md:text-xl font-semibold truncate">
-                          {song.title}
-                        </h3>
-                        <p className="text-sm md:text-md text-muted-foreground truncate">
-                          {song.artist}
-                        </p>
-                        <div className="text-xs md:text-sm text-muted-foreground">
-                          {song.version} •{" "}
-                          <span
-                            style={{
-                              color: getDifficultyColor(song.difficulty),
-                              fontWeight: "600",
-                            }}
-                          >
-                            {song.difficulty}
-                          </span>
+                      {/* Left Section: Image + Info */}
+                      <div className="flex items-center gap-4 flex-1 min-w-0">
+                        <img
+                          src={`https://corsproxy.io/?${encodeURIComponent(
+                            song.imageUrl
+                          )}`}
+                          width={80}
+                          height={80}
+                          loading="lazy"
+                          alt={`Cover art: ${song.title} by ${song.artist}`}
+                          className="h-20 w-20 rounded-md object-cover ring-1 ring-border group-hover:ring-ring transition"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-lg md:text-xl font-semibold truncate">
+                            {song.title}
+                          </h3>
+                          <p className="text-sm md:text-md text-muted-foreground truncate">
+                            {song.artist}
+                          </p>
+                          <div className="text-xs md:text-sm text-muted-foreground">
+                            {song.version} •{" "}
+                            <span
+                              style={{
+                                color: getDifficultyColor(song.difficulty),
+                                fontWeight: "600",
+                              }}
+                            >
+                              {song.difficulty}
+                            </span>
+                          </div>
                         </div>
                       </div>
-                      <div className="flex flex-col items-end gap-2">
+
+                      {/* Center Section: Play Rating Input */}
+                      <div className="flex flex-col items-center gap-2 min-w-[240px] md:min-w-[300px] max-w-[400px] flex-1">
+                        {/* Play Rating Input (shows on hover) */}
+                        <div className="w-full max-w-[320px] group relative">
+                          {/* Hover overlay with input and play rating */}
+                          <div className="absolute inset-0 bg-white/95 backdrop-blur-sm border border-gray-200 rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col items-center p-2 z-10">
+                            {/* Spacer to center input when no value */}
+                            {!getTargetRating(song.title, song.difficulty) && <div className="flex-1"></div>}
+                            
+                            <div className="w-full">
+                              <Input
+                                type="number"
+                                step="0.01"
+                                placeholder="Enter play rating"
+                                value={getTargetRating(song.title, song.difficulty)}
+                                onChange={(e) => updateTargetRating(song.title, song.difficulty, e.target.value)}
+                                className="w-full text-center text-sm h-8"
+                              />
+                            </div>
+                            
+                            {/* Show required score or spacer */}
+                            <div className="w-full h-6 mt-2">
+                              {getTargetRating(song.title, song.difficulty) && (
+                                <div className="text-xs font-medium text-green-700 px-2 py-1 bg-green-50 border border-green-200 rounded text-center w-full">
+                                  Required: {calculateRequiredScore(song.constant, parseFloat(getTargetRating(song.title, song.difficulty)) || 0).toLocaleString()}
+                                </div>
+                              )}
+                            </div>
+                            
+                            {/* Spacer to center input when no value */}
+                            {!getTargetRating(song.title, song.difficulty) && <div className="flex-1"></div>}
+                          </div>
+                          
+                          {/* Empty hover area */}
+                          <div className="h-24 cursor-pointer"></div>
+                        </div>
+                      </div>
+
+                      {/* Right Section: Level, Constant, Chart View */}
+                      <div className="flex flex-col items-end gap-2 min-w-[140px] md:min-w-[160px]">
                         <Badge
-                          className="select-none h-6 md:h-8 min-w-[120px] md:min-w-[140px] justify-center text-xs md:text-sm font-medium font-mono border-2"
+                          className="select-none h-6 md:h-8 w-full justify-center text-xs md:text-sm font-medium font-mono border-2"
                           style={{
                             backgroundColor: "#4e356f",
                             borderColor: "#4e356f",
@@ -440,7 +521,7 @@ const Index = () => {
                           {"Level:    " + song.level}
                         </Badge>
                         <Badge
-                          className="select-none h-6 md:h-8 min-w-[120px] md:min-w-[140px] justify-center text-xs md:text-sm font-medium font-mono border-2"
+                          className="select-none h-6 md:h-8 w-full justify-center text-xs md:text-sm font-medium font-mono border-2"
                           style={{
                             backgroundColor: "#f9fafb",
                             borderColor: "#4e356f",
@@ -450,13 +531,14 @@ const Index = () => {
                         >
                           {"Constant: " + song.constant}
                         </Badge>
+
                         <Button
                           onClick={() =>
                             handleChartView(song.title, song.difficulty)
                           }
                           variant="outline"
                           size="sm"
-                          className="text-xs font-medium bg-red-50 border-red-200 hover:bg-red-100 hover:border-red-300 text-red-700"
+                          className="text-xs font-medium bg-red-50 border-red-200 hover:bg-red-100 hover:border-red-300 text-red-700 w-full justify-center"
                         >
                           Chart View
                         </Button>
