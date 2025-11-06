@@ -33,6 +33,13 @@ const Index = () => {
   );
 
   const [targetRatings, setTargetRatings] = useState<Map<string, string>>(new Map());
+  // Which fields the text search applies to
+  const [searchFields, setSearchFields] = useState<Array<"title" | "artist" | "constant" | "version">>([
+    "title",
+    "artist",
+    "constant",
+    "version",
+  ]);
   const difficultyTypes = ["Past", "Present", "Future", "Eternal", "Beyond"];
 
 
@@ -163,17 +170,35 @@ const Index = () => {
 
   const filtered: Song[] = useMemo(() => {
     const [min, max] = debouncedDifficultyRange;
-    const q = query.toLowerCase();
+    const q = query.toLowerCase().trim();
 
     return processedSongs.filter((s) => {
-      const matches = !q || s.searchText.includes(q);
+      // Field-scoped text matching
+      const fieldMatch = !q || (() => {
+        const checks: boolean[] = [];
+        if (searchFields.includes("title")) {
+          checks.push(s.title.toLowerCase().includes(q));
+        }
+        if (searchFields.includes("artist")) {
+          checks.push(s.artist.toLowerCase().includes(q));
+        }
+        if (searchFields.includes("version")) {
+          const v = (s.version || "").toLowerCase();
+          checks.push(v.startsWith(q) || v.includes(q));
+        }
+        if (searchFields.includes("constant")) {
+          const cStr = String(s.constant).toLowerCase();
+          checks.push(cStr.startsWith(q) || cStr.includes(q));
+        }
+        return checks.some(Boolean);
+      })();
       const inRange = s.constant >= min && s.constant <= max;
       const difficultyMatch =
         selectedDifficulties.length === 0 ||
         selectedDifficulties.includes(s.difficulty);
-      return matches && inRange && difficultyMatch;
+      return fieldMatch && inRange && difficultyMatch;
     });
-  }, [query, debouncedDifficultyRange, selectedDifficulties, processedSongs]);
+  }, [query, debouncedDifficultyRange, selectedDifficulties, processedSongs, searchFields]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -272,6 +297,40 @@ const Index = () => {
               />
             </div>
 
+            {/* Search-in Field Toggles */}
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-sm text-muted-foreground">Search filters:</span>
+              {(
+                [
+                  { key: "title", label: "Title" },
+                  { key: "artist", label: "Artist" },
+                  { key: "constant", label: "Constant" },
+                  { key: "version", label: "Version" },
+                ] as Array<{ key: "title" | "artist" | "constant" | "version"; label: string }>
+              ).map(({ key, label }) => {
+                const active = searchFields.includes(key);
+                return (
+                  <Button
+                    key={key}
+                    variant={active ? "default" : "outline"}
+                    size="sm"
+                    className="text-xs"
+                    onClick={() => {
+                      setSearchFields((prev) =>
+                        prev.includes(key)
+                          ? prev.filter((k) => k !== key)
+                          : [...prev, key]
+                      );
+                    }}
+                    aria-pressed={active}
+                    aria-label={`Toggle search in ${label}`}
+                  >
+                    {label}
+                  </Button>
+                );
+              })}
+            </div>
+
             {/* Sort and Filter Controls */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 width:75%">
               {/* Sort Controls */}
@@ -307,7 +366,7 @@ const Index = () => {
 
               {/* Filter Controls */}
               <div className="flex flex-wrap gap-2 items-center">
-                <span className="text-sm text-muted-foreground">Filter:</span>
+                <span className="text-sm text-muted-foreground">Difficulty:</span>
                 {difficultyTypes.map((difficulty) => (
                   <Button
                     key={difficulty}
@@ -348,7 +407,7 @@ const Index = () => {
               <div className="hidden lg:flex lg:items-center lg:gap-4 lg:flex-1">
                 <div className="flex items-center gap-2 min-w-0">
                   <span className="text-sm text-muted-foreground whitespace-nowrap">
-                    Difficulty:
+                    Constant Range:
                   </span>
                   <div className="flex items-center gap-1">
                     <Badge
