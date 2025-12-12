@@ -46,8 +46,8 @@ A basic web application for browsing and searching Arcaea charts.
 3. **Set up environment variables**
    ```bash
    # Create a .env.local file
-   echo "VITE_SUPABASE_URL=your_supabase_project_url" >> .env.local
-   echo "VITE_SUPABASE_ANON_KEY=your_supabase_anon_key" >> .env.local
+   echo "SUPABASE_URL=your_supabase_project_url" >> .env.local
+   echo "SUPABASE_ANON_KEY=your_supabase_anon_key" >> .env.local
    
    # Optional: For YouTube chart view videos
    # Add the following to Vercel environment variables:
