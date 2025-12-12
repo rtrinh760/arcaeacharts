@@ -32,7 +32,6 @@ const Index = () => {
     new Map()
   );
 
-  const [targetRatings, setTargetRatings] = useState<Map<string, string>>(new Map());
   // Which fields the text search applies to
   const [searchFields, setSearchFields] = useState<Array<"title" | "artist" | "constant" | "version">>([
     "title",
@@ -46,35 +45,27 @@ const Index = () => {
 
 
 
-  const calculateRequiredScore = (constant: number, targetRating: number): number => {
-    const requiredModifier = targetRating - constant;
-    
-    if (requiredModifier >= 2.0) {
-      return 10000000;
-    }
-    
-    if (requiredModifier >= 1.0) {
-      return Math.round(9800000 + (requiredModifier - 1.0) * 200000);
-    }
-    
-    const calculatedScore = Math.round(9500000 + requiredModifier * 300000);
-    
-    return Math.max(0, Math.min(9800000, calculatedScore));
-  };
+  // Play rating calculation formula (commented out)
+  // const calculateRequiredScore = (constant: number, targetRating: number): number => {
+  //   const requiredModifier = targetRating - constant;
+  //   
+  //   if (requiredModifier >= 2.0) {
+  //     return 10000000;
+  //   }
+  //   
+  //   if (requiredModifier >= 1.0) {
+  //     return Math.round(9800000 + (requiredModifier - 1.0) * 200000);
+  //   }
+  //   
+  //   const calculatedScore = Math.round(9500000 + requiredModifier * 300000);
+  //   
+  //   return Math.max(0, Math.min(9800000, calculatedScore));
+  // };
 
 
 
 
 
-  const getTargetRating = (songTitle: string, difficulty: string): string => {
-    const key = `${songTitle}-${difficulty}`;
-    return targetRatings.get(key) || "";
-  };
-
-  const updateTargetRating = (songTitle: string, difficulty: string, rating: string) => {
-    const key = `${songTitle}-${difficulty}`;
-    setTargetRatings(prev => new Map(prev).set(key, rating));
-  };
 
 
 
@@ -563,44 +554,6 @@ const Index = () => {
                               {song.difficulty}
                             </span>
                           </div>
-                        </div>
-                      </div>
-
-                      {/* Center Section: Play Rating Input */}
-                      <div className="flex flex-col items-center gap-2 min-w-[240px] md:min-w-[300px] max-w-[400px] flex-1">
-                        {/* Play Rating Input (shows on hover) */}
-                        <div className="w-full max-w-[320px] group relative">
-                          {/* Hover overlay with input and play rating */}
-                          <div className="absolute inset-0 bg-white/95 backdrop-blur-sm border border-gray-200 rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col items-center p-2 z-10">
-                            {/* Spacer to center input when no value */}
-                            {!getTargetRating(song.title, song.difficulty) && <div className="flex-1"></div>}
-                            
-                            <div className="w-full">
-                              <Input
-                                type="number"
-                                step="0.01"
-                                placeholder="Enter play rating"
-                                value={getTargetRating(song.title, song.difficulty)}
-                                onChange={(e) => updateTargetRating(song.title, song.difficulty, e.target.value)}
-                                className="w-full text-center text-sm h-8"
-                              />
-                            </div>
-                            
-                            {/* Show required score or spacer */}
-                            <div className="w-full h-6 mt-2">
-                              {getTargetRating(song.title, song.difficulty) && (
-                                <div className="text-xs font-medium text-green-700 px-2 py-1 bg-green-50 border border-green-200 rounded text-center w-full">
-                                  Required: {calculateRequiredScore(song.constant, parseFloat(getTargetRating(song.title, song.difficulty)) || 0).toLocaleString()}
-                                </div>
-                              )}
-                            </div>
-                            
-                            {/* Spacer to center input when no value */}
-                            {!getTargetRating(song.title, song.difficulty) && <div className="flex-1"></div>}
-                          </div>
-                          
-                          {/* Empty hover area */}
-                          <div className="h-24 cursor-pointer"></div>
                         </div>
                       </div>
 
