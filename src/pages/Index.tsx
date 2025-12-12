@@ -3,7 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { getSongs, type Song } from "@/lib/supabase";
+import { getSongs, getSongsPaginated, getCachedSummaries, saveSummariesToCache, getImageUrl, type Song } from "@/lib/supabase";
 import { searchChartViewVideos, type YouTubeVideo } from "@/lib/youtube";
 import { VideoOverlay } from "@/components/VideoOverlay";
 
@@ -139,12 +139,52 @@ const Index = () => {
       try {
         setLoading(true);
         setError(null);
-        const songs = await getSongs();
-        setAllSongs(songs);
+
+        // 1. Try to load from cache first (instant display)
+        const cachedSummaries = getCachedSummaries();
+        if (cachedSummaries) {
+          // Convert summaries to full Song objects (includes cached imageUrl)
+          const cachedSongs: Song[] = cachedSummaries.map(s => ({
+            ...s,
+          }));
+          setAllSongs(cachedSongs);
+          setLoading(false); // Show cached data immediately
+        }
+
+        // 2. Fetch first page from server (with full data, ordered by constant DESC)
+        const { data: firstPage } = await getSongsPaginated(1, 25);
+        
+        // Update with real data (includes imageUrl)
+        setAllSongs(firstPage);
+        setLoading(false);
+
+        // 3. Background: Fetch all songs and update cache
+        // This runs in the background without blocking the UI
+        getSongs()
+          .then(allSongs => {
+            // Convert to summaries (includes imageUrl for instant display)
+            const summaries = allSongs.map((song) => ({
+              id: song.id,
+              imageUrl: song.imageUrl,
+              title: song.title,
+              artist: song.artist,
+              difficulty: song.difficulty,
+              constant: song.constant,
+              level: song.level,
+              version: song.version,
+            }));
+            saveSummariesToCache(summaries);
+            // Optionally update allSongs with full dataset for filtering/searching
+            setAllSongs(allSongs);
+          })
+          .catch(err => {
+            console.error('Background cache update failed:', err);
+            // Non-critical, don't show error to user
+          });
+
       } catch (err) {
         console.error("Error loading songs:", err);
         setError("Failed to load songs. Please try again later.");
-      } finally {
         setLoading(false);
       }
     };
@@ -498,9 +538,7 @@ const Index = () => {
                       {/* Left Section: Image + Info */}
                       <div className="flex items-center gap-4 flex-1 min-w-0">
                         <img
-                          src={`https://corsproxy.io/?${encodeURIComponent(
-                            song.imageUrl
-                          )}`}
+                          src={getImageUrl(song.imageUrl)}
                           width={80}
                           height={80}
                           loading="lazy"
