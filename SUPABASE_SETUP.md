@@ -25,8 +25,8 @@ This guide explains how to set up your own database backend for a song chart bro
 2. Add your Supabase credentials:
 
 ```env
-SUPABASE_URL=your_project_url_here
-SUPABASE_ANON_KEY=your_anon_key_here
+VITE_SUPABASE_URL=your_project_url_here
+VITE_SUPABASE_ANON_KEY=your_anon_key_here
 ```
 
 3. Replace the placeholder values with your actual credentials from Step 2
